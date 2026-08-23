@@ -1,5 +1,5 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
-import { prisma, withTimeout } from "@/lib/db/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { updateCommitmentDraft, publishCommitment } from "@/lib/services/commitment.service";
 import { redirect } from "next/navigation";
 import { CheckCircle, Quote } from "lucide-react";
@@ -10,16 +10,7 @@ export default async function AdminCommitmentPage() {
 
   if (!siteId) redirect("/admin/login");
 
-  const commitment = await withTimeout(
-    prisma.commitment.findUnique({ where: { siteId } }),
-    {
-      pubHeading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
-      pubContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
-      draftHeading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
-      draftContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
-    } as any,
-    800
-  );
+  const commitment = await prisma.commitment.findUnique({ where: { siteId } });
 
   async function handleSaveDraft(formData: FormData) {
     "use server";

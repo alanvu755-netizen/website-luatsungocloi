@@ -2,7 +2,6 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getExperiences, createExperience, deleteExperience } from "@/lib/services/experience.service";
 import { redirect } from "next/navigation";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
-import { withTimeout } from "@/lib/db/prisma";
 
 interface HighlightItem {
   id: string;
@@ -21,39 +20,9 @@ interface ExperienceItem {
 export default async function AdminExperiencePage() {
   const user = await getAuthenticatedUser();
   const siteId = user?.siteId;
-
   if (!siteId) redirect("/admin/login");
 
-  const experiences = await withTimeout(
-    getExperiences(siteId),
-    [
-      {
-        id: "ex1",
-        startYear: 2011,
-        endYear: 2021,
-        position: "Công tác trong ngành Kiểm sát tỉnh Đồng Tháp",
-        organization: "Ngành Kiểm sát tỉnh Đồng Tháp",
-        highlights: [{ id: "h1", content: "Kiểm sát viên giai đoạn 2017 - 2021" }],
-      },
-      {
-        id: "ex2",
-        startYear: 2021,
-        endYear: 2025,
-        position: "Công tác tại Ban Nội chính Tỉnh ủy Đồng Tháp",
-        organization: "Ban Nội chính Tỉnh ủy Đồng Tháp",
-        highlights: [{ id: "h2", content: "Chuyên lĩnh vực phòng, chống tham nhũng" }],
-      },
-      {
-        id: "ex3",
-        startYear: 2025,
-        endYear: 2026,
-        position: "Luật sư chuyên nghiệp",
-        organization: "Luật sư chuyên nghiệp",
-        highlights: [],
-      },
-    ] as any,
-    800
-  );
+  const experiences = await getExperiences(siteId);
 
   async function handleAdd(formData: FormData) {
     "use server";

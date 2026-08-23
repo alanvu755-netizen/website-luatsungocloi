@@ -1,5 +1,5 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
-import { prisma, withTimeout } from "@/lib/db/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { updateIntroductionDraft, publishIntroduction } from "@/lib/services/introduction.service";
 import { redirect } from "next/navigation";
 import { CheckCircle, FileText } from "lucide-react";
@@ -10,18 +10,7 @@ export default async function AdminIntroductionPage() {
 
   if (!siteId) redirect("/admin/login");
 
-  const intro = await withTimeout(
-    prisma.introduction.findUnique({ where: { siteId } }),
-    {
-      pubTitle: "GIỚI THIỆU",
-      pubContent:
-        "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi với hơn 13 năm kinh nghiệm công tác trong ngành Kiểm sát và cơ quan Nội chính Tỉnh ủy, am hiểu sâu sắc pháp luật và thực tiễn áp dụng.\n\nTrên nền tảng kiến thức vững chắc cùng tinh thần trách nhiệm cao, Luật sư luôn tận tâm tư vấn, bảo vệ quyền lợi hợp pháp của khách hàng, đồng hành mang đến giải pháp pháp lý hiệu quả, an toàn và bền vững.",
-      draftTitle: "GIỚI THIỆU",
-      draftContent:
-        "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi với hơn 13 năm kinh nghiệm công tác trong ngành Kiểm sát và cơ quan Nội chính Tỉnh ủy, am hiểu sâu sắc pháp luật và thực tiễn áp dụng.\n\nTrên nền tảng kiến thức vững chắc cùng tinh thần trách nhiệm cao, Luật sư luôn tận tâm tư vấn, bảo vệ quyền lợi hợp pháp của khách hàng, đồng hành mang đến giải pháp pháp lý hiệu quả, an toàn và bền vững.",
-    } as any,
-    800
-  );
+  const intro = await prisma.introduction.findUnique({ where: { siteId } });
 
   async function handleSaveDraft(formData: FormData) {
     "use server";

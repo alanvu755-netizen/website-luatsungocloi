@@ -2,7 +2,6 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getEducations, createEducation, deleteEducation } from "@/lib/services/education.service";
 import { redirect } from "next/navigation";
 import { GraduationCap, Plus, Trash2 } from "lucide-react";
-import { withTimeout } from "@/lib/db/prisma";
 
 export default async function AdminEducationPage() {
   const user = await getAuthenticatedUser();
@@ -10,14 +9,7 @@ export default async function AdminEducationPage() {
 
   if (!siteId) redirect("/admin/login");
 
-  const educations = await withTimeout(
-    getEducations(siteId),
-    [
-      { id: "e1", degree: "Cử nhân Luật", institution: "Đại học Cần Thơ" },
-      { id: "e2", degree: "Thạc sĩ Luật", institution: "Đại học Luật Thành phố Hồ Chí Minh" },
-    ] as any,
-    800
-  );
+  const educations = await getEducations(siteId);
 
   async function handleAdd(formData: FormData) {
     "use server";

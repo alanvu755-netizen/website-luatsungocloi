@@ -2,7 +2,6 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getContactChannels, updateContactChannel, toggleContactChannelStatus } from "@/lib/services/contact-channel.service";
 import { redirect } from "next/navigation";
 import { PhoneCall, CheckCircle2, AlertCircle, Globe } from "lucide-react";
-import { withTimeout } from "@/lib/db/prisma";
 
 const DEFAULT_CONTACT_CHANNELS = [
   {
@@ -45,7 +44,7 @@ export default async function AdminContactPage({
 
   if (!siteId) redirect("/admin/login");
 
-  const dbChannels = await withTimeout(getContactChannels(siteId), [], 800);
+  const dbChannels = await getContactChannels(siteId);
   const channels = dbChannels.length > 0 ? dbChannels : DEFAULT_CONTACT_CHANNELS;
 
   async function handleToggle(formData: FormData) {

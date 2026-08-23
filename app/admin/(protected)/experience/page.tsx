@@ -2,6 +2,7 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getExperiences, createExperience, deleteExperience } from "@/lib/services/experience.service";
 import { redirect } from "next/navigation";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
+import { withTimeout } from "@/lib/db/prisma";
 
 interface HighlightItem {
   id: string;
@@ -23,12 +24,9 @@ export default async function AdminExperiencePage() {
 
   if (!siteId) redirect("/admin/login");
 
-  let experiences: ExperienceItem[] = [];
-  try {
-    experiences = await getExperiences(siteId);
-  } catch (err) {
-    console.error("Error fetching experiences for admin:", err);
-    experiences = [
+  const experiences = await withTimeout(
+    getExperiences(siteId),
+    [
       {
         id: "ex1",
         startYear: 2011,
@@ -53,8 +51,9 @@ export default async function AdminExperiencePage() {
         organization: "Luật sư chuyên nghiệp",
         highlights: [],
       },
-    ];
-  }
+    ],
+    800
+  );
 
   async function handleAdd(formData: FormData) {
     "use server";

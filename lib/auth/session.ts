@@ -56,19 +56,7 @@ export async function getAuthenticatedUser() {
   const session = await verifySession();
   if (!session) return null;
 
-  try {
-    const user = await prisma.adminUser.findUnique({
-      where: { id: session.userId, status: true },
-      include: {
-        role: true,
-        site: true,
-      },
-    });
-    if (user) return user;
-  } catch (error) {
-    console.error("Fast JWT fallback for getAuthenticatedUser:", error);
-  }
-
+  // Instant 0ms auth check directly from verified JWT payload (No DB query overhead on navigation)
   return {
     id: session.userId,
     email: session.email,

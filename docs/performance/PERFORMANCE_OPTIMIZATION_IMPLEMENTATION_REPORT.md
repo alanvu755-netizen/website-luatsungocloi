@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-All implementation requirements locked in `PERFORMANCE_OPTIMIZATION_PLAN_v1.1.md` have been executed, verified, and benchmarked. The application preserves 100% of Architecture Lock v2.3.1 rules: Tenant Isolation, RBAC, AI Add-on Security, Global AI Kill Switch, Audit Logging, Draft/Published semantics, CMS functionality, SEO structure, and visual fidelity.
+All implementation requirements locked in `PERFORMANCE_OPTIMIZATION_PLAN_v1.1.md` have been executed, verified, and benchmarked. Benchmark results are reported from the production-build measurement run (`pnpm build` -> `pnpm start`). The application preserves 100% of Architecture Lock v2.3.1 rules: Tenant Isolation, RBAC, AI Add-on Security, Global AI Kill Switch, Audit Logging, Draft/Published semantics, CMS functionality, SEO structure, and visual fidelity.
 
 ---
 
@@ -39,7 +39,7 @@ Applied database schema changes via `npx prisma db push` to Supabase PostgreSQL:
 - `PracticeArea`: `@@index([siteId, status, displayOrder])`
 - `ContactChannel`: `@@index([siteId, status, displayOrder])`
 
-**Database Latency Impact**: Query scans reduced from O(N) sequential scans to O(log N) indexed lookups (< 5ms per query).
+**Database Latency Impact**: Các composite indexes được bổ sung nhằm tối ưu các query pattern thực tế. Hiệu quả được đánh giá dựa trên query execution evidence và benchmark thực tế của các truy vấn liên quan.
 
 ---
 

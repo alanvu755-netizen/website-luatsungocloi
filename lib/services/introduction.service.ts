@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize } from "@/lib/utils/cache";
 
 export async function getIntroduction(siteId: string) {
   return await prisma.introduction.findUnique({
@@ -7,7 +8,7 @@ export async function getIntroduction(siteId: string) {
   });
 }
 
-export async function getPublishedIntroduction(siteId: string) {
+export const getPublishedIntroduction = memoize(async (siteId: string) => {
   const intro = await prisma.introduction.findUnique({
     where: { siteId },
   });
@@ -17,7 +18,7 @@ export async function getPublishedIntroduction(siteId: string) {
     title: intro.pubTitle,
     content: intro.pubContent,
   };
-}
+});
 
 export async function updateIntroductionDraft(
   siteId: string,

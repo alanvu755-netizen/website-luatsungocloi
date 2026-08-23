@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize } from "@/lib/utils/cache";
 
 export type ContentStatus = "DRAFT" | "PUBLISHED" | "HIDDEN";
 
@@ -10,7 +11,7 @@ export async function getPracticeAreas(siteId: string) {
   });
 }
 
-export async function getPublishedPracticeAreas(siteId: string) {
+export const getPublishedPracticeAreas = memoize(async (siteId: string) => {
   return await prisma.practiceArea.findMany({
     where: {
       siteId,
@@ -18,7 +19,7 @@ export async function getPublishedPracticeAreas(siteId: string) {
     },
     orderBy: { displayOrder: "asc" },
   });
-}
+});
 
 export async function createPracticeArea(
   siteId: string,

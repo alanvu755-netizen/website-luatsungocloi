@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/db/prisma";
-import { cache } from "react";
+import { memoize } from "@/lib/utils/cache";
 
-export const getSiteBySlug = cache(async (slug = "le-thi-ngoc-loi") => {
+export const getSiteBySlug = memoize(async (slug = "le-thi-ngoc-loi") => {
   return await prisma.site.findUnique({
     where: { slug },
     include: { settings: true },
   });
 });
 
-export const getPublicHeaderMenus = cache(async (siteId: string) => {
+export const getPublicHeaderMenus = memoize(async (siteId: string) => {
   return await prisma.menu.findMany({
     where: {
       siteId,

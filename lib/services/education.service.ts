@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize } from "@/lib/utils/cache";
 
 export type ContentStatus = "DRAFT" | "PUBLISHED" | "HIDDEN";
 
@@ -10,7 +11,7 @@ export async function getEducations(siteId: string) {
   });
 }
 
-export async function getPublishedEducations(siteId: string) {
+export const getPublishedEducations = memoize(async (siteId: string) => {
   return await prisma.education.findMany({
     where: {
       siteId,
@@ -18,7 +19,7 @@ export async function getPublishedEducations(siteId: string) {
     },
     orderBy: { displayOrder: "asc" },
   });
-}
+});
 
 export async function createEducation(
   siteId: string,

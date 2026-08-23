@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
+import { memoize } from "@/lib/utils/cache";
 
 const SECRET_KEY = new TextEncoder().encode(
   process.env.SESSION_SECRET || "default_super_secret_session_key_32_bytes_min!"
@@ -52,7 +53,7 @@ export async function destroySession() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export async function getAuthenticatedUser() {
+export const getAuthenticatedUser = memoize(async () => {
   const session = await verifySession();
   if (!session) return null;
 
@@ -67,4 +68,4 @@ export async function getAuthenticatedUser() {
     siteId: session.siteId,
     site: session.siteId ? { id: session.siteId, name: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi" } : null,
   };
-}
+});

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize } from "@/lib/utils/cache";
 
 export async function getCommitment(siteId: string) {
   return await prisma.commitment.findUnique({
@@ -7,7 +8,7 @@ export async function getCommitment(siteId: string) {
   });
 }
 
-export async function getPublishedCommitment(siteId: string) {
+export const getPublishedCommitment = memoize(async (siteId: string) => {
   const commitment = await prisma.commitment.findUnique({
     where: { siteId },
   });
@@ -17,7 +18,7 @@ export async function getPublishedCommitment(siteId: string) {
     heading: commitment.pubHeading,
     content: commitment.pubContent,
   };
-}
+});
 
 export async function updateCommitmentDraft(
   siteId: string,

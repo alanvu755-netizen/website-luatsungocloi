@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize } from "@/lib/utils/cache";
 
 export type ContentStatus = "DRAFT" | "PUBLISHED" | "HIDDEN";
 
@@ -15,7 +16,7 @@ export async function getExperiences(siteId: string) {
   });
 }
 
-export async function getPublishedExperiences(siteId: string) {
+export const getPublishedExperiences = memoize(async (siteId: string) => {
   return await prisma.experience.findMany({
     where: {
       siteId,
@@ -28,7 +29,7 @@ export async function getPublishedExperiences(siteId: string) {
     },
     orderBy: { displayOrder: "asc" },
   });
-}
+});
 
 export async function createExperience(
   siteId: string,

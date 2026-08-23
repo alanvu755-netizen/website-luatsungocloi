@@ -71,7 +71,7 @@ export default async function AdminPracticeAreasPage() {
           </h2>
 
           <div className="space-y-3">
-            {practiceAreas.map((item, idx) => (
+            {practiceAreas.map((item: any, idx: number) => (
               <div
                 key={item.id}
                 className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-3"

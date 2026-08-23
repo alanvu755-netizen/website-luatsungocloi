@@ -68,7 +68,7 @@ export default async function AdminEducationPage() {
           </h2>
 
           <div className="space-y-3">
-            {educations.map((item, idx) => (
+            {educations.map((item: any, idx: number) => (
               <div
                 key={item.id}
                 className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 flex items-center justify-between"

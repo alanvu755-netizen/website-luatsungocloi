@@ -17,45 +17,50 @@ import { getPublishedPracticeAreas } from "@/lib/services/practice-area.service"
 import { getPublishedCommitment } from "@/lib/services/commitment.service";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
-export const revalidate = 60; // 60 seconds ISR fallback
+export const dynamic = "force-dynamic";
 
 async function getSiteData() {
-  const site = await prisma.site.findUnique({
-    where: { slug: "le-thi-ngoc-loi" },
-    include: { settings: true },
-  });
+  try {
+    const site = await prisma.site.findUnique({
+      where: { slug: "le-thi-ngoc-loi" },
+      include: { settings: true },
+    });
 
-  if (!site) return null;
+    if (!site) return null;
 
-  const [
-    hero,
-    introduction,
-    educations,
-    experiences,
-    practiceAreas,
-    commitment,
-    enabledChannels,
-  ] = await Promise.all([
-    getPublishedHero(site.id),
-    getPublishedIntroduction(site.id),
-    getPublishedEducations(site.id),
-    getPublishedExperiences(site.id),
-    getPublishedPracticeAreas(site.id),
-    getPublishedCommitment(site.id),
-    getEnabledContactChannels(site.id),
-  ]);
+    const [
+      hero,
+      introduction,
+      educations,
+      experiences,
+      practiceAreas,
+      commitment,
+      enabledChannels,
+    ] = await Promise.all([
+      getPublishedHero(site.id),
+      getPublishedIntroduction(site.id),
+      getPublishedEducations(site.id),
+      getPublishedExperiences(site.id),
+      getPublishedPracticeAreas(site.id),
+      getPublishedCommitment(site.id),
+      getEnabledContactChannels(site.id),
+    ]);
 
-  return {
-    site,
-    settings: site.settings,
-    hero,
-    introduction,
-    educations,
-    experiences,
-    practiceAreas,
-    commitment,
-    enabledChannels,
-  };
+    return {
+      site,
+      settings: site.settings,
+      hero,
+      introduction,
+      educations,
+      experiences,
+      practiceAreas,
+      commitment,
+      enabledChannels,
+    };
+  } catch (error) {
+    console.error("Error loading homepage site data:", error);
+    return null;
+  }
 }
 
 export default async function PublicPage() {

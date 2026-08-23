@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Calendar, ArrowRight, PhoneCall, ShieldCheck } from "lucide-react";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
-export const revalidate = 60; // ISR 60s
+export const dynamic = "force-dynamic";
 
 export default async function PublicSubmenuOrArticlePage({
   params,

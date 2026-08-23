@@ -111,7 +111,7 @@ export default async function AdminExperiencePage() {
           </h2>
 
           <div className="space-y-4">
-            {experiences.map((item) => (
+            {experiences.map((item: any) => (
               <div
                 key={item.id}
                 className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 flex items-start justify-between"

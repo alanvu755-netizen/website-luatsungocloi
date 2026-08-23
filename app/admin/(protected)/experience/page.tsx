@@ -51,7 +51,7 @@ export default async function AdminExperiencePage() {
         organization: "Luật sư chuyên nghiệp",
         highlights: [],
       },
-    ],
+    ] as any,
     800
   );
 

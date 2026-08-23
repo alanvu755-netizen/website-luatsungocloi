@@ -21,7 +21,7 @@ export default async function AdminPracticeAreasPage() {
       { id: "p6", title: "Tư vấn pháp lý thường xuyên cho cá nhân, tổ chức" },
       { id: "p7", title: "Đại diện tham gia tố tụng, giải quyết tranh chấp" },
       { id: "p8", title: "Bào chữa người bị buộc tội, bảo vệ quyền và lợi ích hợp pháp cho đương sự" },
-    ],
+    ] as any,
     800
   );
 

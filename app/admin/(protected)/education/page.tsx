@@ -15,7 +15,7 @@ export default async function AdminEducationPage() {
     [
       { id: "e1", degree: "Cử nhân Luật", institution: "Đại học Cần Thơ" },
       { id: "e2", degree: "Thạc sĩ Luật", institution: "Đại học Luật Thành phố Hồ Chí Minh" },
-    ],
+    ] as any,
     800
   );
 

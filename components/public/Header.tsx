@@ -29,15 +29,15 @@ export default async function Header() {
         <div className="flex items-center justify-between h-16">
           
           {/* Subtle Logo & Title */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-full bg-navy flex items-center justify-center text-gold shadow-xs group-hover:scale-105 transition-transform">
-              <Scale className="w-5 h-5 stroke-[2]" />
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-navy flex items-center justify-center text-gold shadow-xs group-hover:scale-105 transition-transform flex-shrink-0">
+              <Scale className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-sm sm:text-base text-navy tracking-tight leading-tight group-hover:text-gold transition-colors">
+            <div className="flex flex-col min-w-0">
+              <span className="font-serif font-bold text-xs sm:text-base text-navy tracking-tight leading-tight group-hover:text-gold transition-colors whitespace-nowrap truncate">
                 LUẬT SƯ LÊ THỊ NGỌC LỢI
               </span>
-              <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-sans uppercase tracking-wider hidden sm:block whitespace-nowrap">
                 Thạc sĩ Luật – Tư vấn & Tố tụng
               </span>
             </div>
@@ -94,10 +94,10 @@ export default async function Header() {
           </nav>
 
           {/* Header Hotline Action */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <a
               href="tel:0902081061"
-              className="inline-flex items-center gap-2 bg-navy hover:bg-navy-dark text-white px-4 py-2 rounded-full font-sans text-xs font-semibold shadow-xs transition-all hover:scale-105"
+              className="inline-flex items-center gap-1.5 bg-navy hover:bg-navy-dark text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-sans text-[11px] sm:text-xs font-semibold shadow-xs transition-all hover:scale-105 whitespace-nowrap"
             >
               <span>Hotline: 0902 081 061</span>
             </a>

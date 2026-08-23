@@ -54,15 +54,15 @@ export default function Hero({ data, introduction }: HeroProps) {
               </div>
             </div>
 
-            {/* 5. KHỐI GIỚI THIỆU (CARD) - KHOẢNG CÁCH THÍCH ỨNG (MOBILE: 24PX/32PX, DESKTOP: 64PX/MT-16) */}
-            <div className="w-full mt-6 sm:mt-8 lg:mt-16">
+            {/* 5. KHỐI GIỚI THIỆU (CARD) - HIỂN THỊ DƯỚI CHÂN DỤNG TRÊN MOBILE, DÓNG THẲNG LỀ TRÁI TRÊN DESKTOP */}
+            <div className="w-full mt-6 lg:mt-16 order-3 lg:order-none">
               <IntroductionSection data={introduction ?? null} />
             </div>
 
           </div>
 
-          {/* CỘT PHẢI: KHỐI NỀN NAVY & CHÂN DỤNG THÍCH ỨNG ĐA THIẾT BỊ (MOBILE: 380PX, TABLET: 480-520PX, DESKTOP: 600PX) */}
-          <div className="lg:col-span-6 relative flex justify-center items-end w-full h-[380px] sm:h-[480px] md:h-[520px] lg:h-[600px] pt-0 mt-0">
+          {/* CỘT PHẢI: KHỐI NỀN NAVY & CHÂN DỤNG (MOBILE ORDER-2: XẾP NGAY DƯỚI TÊN LUẬT SƯ THU GỌN 280PX, DESKTOP ORDER-NONE: 600PX) */}
+          <div className="lg:col-span-6 relative flex justify-center items-end w-full h-[280px] sm:h-[400px] md:h-[480px] lg:h-[600px] pt-0 mt-0 order-2 lg:order-none">
             
             {/* 1. BACKGROUND GEOMETRY (SVG VÒM NAVY MỞ RỘNG XUỐNG CHÂN CĂN CHÍNH GIỮA) */}
             <div className="absolute inset-0 z-0 flex items-end justify-center pointer-events-none overflow-hidden">

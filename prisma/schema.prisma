@@ -149,6 +149,8 @@ model Education {
   status       String   @default("PUBLISHED") // "DRAFT", "PUBLISHED", "HIDDEN"
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([siteId, status, displayOrder])
 }
 
 model Experience {
@@ -165,6 +167,8 @@ model Experience {
   highlights   ExperienceHighlight[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
+
+  @@index([siteId, status, displayOrder])
 }
 
 model ExperienceHighlight {
@@ -186,6 +190,8 @@ model PracticeArea {
   status       String   @default("PUBLISHED") // "DRAFT", "PUBLISHED", "HIDDEN"
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([siteId, status, displayOrder])
 }
 
 model Commitment {
@@ -214,6 +220,8 @@ model ContactChannel {
   openInNewTab  Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([siteId, status, displayOrder])
 }
 
 model SiteSettings {
@@ -263,6 +271,7 @@ model Menu {
   updatedAt    DateTime  @updatedAt
 
   @@unique([siteId, slug])
+  @@index([siteId, status, displayOrder])
 }
 
 model Submenu {
@@ -280,6 +289,7 @@ model Submenu {
   updatedAt    DateTime  @updatedAt
 
   @@unique([menuId, slug])
+  @@index([siteId, menuId, status, displayOrder])
 }
 
 // ----------------------------------------------------
@@ -309,6 +319,9 @@ model Article {
   updatedAt       DateTime  @updatedAt
 
   @@unique([siteId, slug])
+  @@index([siteId, status, publishedAt])
+  @@index([siteId, menuId, status])
+  @@index([siteId, submenuId, status])
 }
 
 // ----------------------------------------------------

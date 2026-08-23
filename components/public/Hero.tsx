@@ -1,5 +1,6 @@
 import { Scale } from "lucide-react";
 import IntroductionSection from "@/components/public/IntroductionSection";
+import Image from "next/image";
 
 interface HeroProps {
   data: {
@@ -115,11 +116,15 @@ export default function Hero({ data, introduction }: HeroProps) {
               </svg>
             </div>
 
-            {/* 2. PORTRAIT LAYER (CHÂN DỤNG TĂNG KÍCH THƯỚC TỶ LỆ HÀI HÒA CÂN XỨNG VỚI NỀN) */}
+            {/* 2. PORTRAIT LAYER (NEXT/IMAGE PRIORITY LCP OPTIMIZATION) */}
             <div className="relative z-10 w-full h-full flex items-end justify-center pt-2 pb-0">
-              <img
+              <Image
                 src={imageUrl}
                 alt={`Chân dung ${name}`}
+                width={500}
+                height={600}
+                priority={true}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 500px"
                 className="max-h-[92%] sm:max-h-[95%] w-auto max-w-full object-contain object-bottom drop-shadow-xl hover:scale-[1.01] transition-transform duration-500"
               />
             </div>

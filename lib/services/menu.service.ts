@@ -50,7 +50,11 @@ export async function createMenu(
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -69,7 +73,11 @@ export async function updateMenu(
     data,
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -78,7 +86,11 @@ export async function deleteMenu(id: string, siteId: string) {
     where: { id, siteId },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -116,7 +128,11 @@ export async function createSubmenu(
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -135,7 +151,11 @@ export async function updateSubmenu(
     data,
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -144,6 +164,10 @@ export async function deleteSubmenu(id: string, siteId: string) {
     where: { id, siteId },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }

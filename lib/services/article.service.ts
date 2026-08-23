@@ -79,9 +79,22 @@ export async function getPublicArticles(
   const [articles, totalCount] = await Promise.all([
     prisma.article.findMany({
       where,
-      include: {
-        menu: true,
-        submenu: true,
+      select: {
+        id: true,
+        siteId: true,
+        menuId: true,
+        submenuId: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        content: true,
+        thumbnailUrl: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        menu: { select: { id: true, title: true, slug: true } },
+        submenu: { select: { id: true, title: true, slug: true } },
       },
       orderBy: { publishedAt: "desc" },
       skip,
@@ -162,7 +175,12 @@ export async function createArticle(
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin/articles");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -196,7 +214,12 @@ export async function updateArticle(
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin/articles");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -209,7 +232,12 @@ export async function publishArticle(id: string, siteId: string) {
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin/articles");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }
 
@@ -218,6 +246,11 @@ export async function deleteArticle(id: string, siteId: string) {
     where: { id, siteId },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin/articles");
+    revalidatePath("/[menuSlug]", "page");
+    revalidatePath("/[menuSlug]/[submenuSlug]", "page");
+  } catch (e) {}
   return result;
 }

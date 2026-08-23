@@ -17,7 +17,7 @@ import { getPublishedPracticeAreas } from "@/lib/services/practice-area.service"
 import { getPublishedCommitment } from "@/lib/services/commitment.service";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR 60s Edge Caching for instantaneous speed
 
 async function getSiteData() {
   try {

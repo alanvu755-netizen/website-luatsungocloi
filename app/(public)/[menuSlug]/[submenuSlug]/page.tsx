@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getPublicArticles, getPublicArticleBySlug } from "@/lib/services/article.service";
-import { getSiteBySlug } from "@/lib/services/site.service";
+import { getSiteBySlug, getPublicHeaderMenus } from "@/lib/services/site.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import Link from "next/link";
@@ -29,24 +29,18 @@ export default async function PublicSubmenuOrArticlePage({
   const site = await getSiteBySlug("le-thi-ngoc-loi");
   if (!site) notFound();
 
-  const [submenu, enabledChannels] = await Promise.all([
-    prisma.submenu.findFirst({
-      where: {
-        siteId: site.id,
-        slug: submenuSlug,
-        status: "VISIBLE",
-        menu: { slug: menuSlug, status: "VISIBLE" },
-      },
-      include: { menu: true },
-    }),
+  const [headerMenus, enabledChannels] = await Promise.all([
+    getPublicHeaderMenus(site.id),
     getEnabledContactChannels(site.id),
   ]);
 
+  const currentMenu = headerMenus.find((m) => m.slug === menuSlug);
+  const currentSubmenu = currentMenu?.submenus.find((s) => s.slug === submenuSlug);
+
   // CASE 1: Render Submenu Article Listing
-  if (submenu) {
+  if (currentSubmenu && currentMenu) {
     const articlesData = await getPublicArticles(site.id, {
-      menuSlug,
-      submenuSlug,
+      submenuId: currentSubmenu.id,
       page,
       pageSize: 10,
     });
@@ -63,17 +57,17 @@ export default async function PublicSubmenuOrArticlePage({
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               <Link href={`/${menuSlug}`} className="hover:text-gold transition-colors">
-                {submenu.menu.title}
+                {currentMenu.title}
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-gold font-bold">{submenu.title}</span>
+              <span className="text-gold font-bold">{currentSubmenu.title}</span>
             </div>
 
             <h1 className="font-serif font-bold text-2xl sm:text-3xl text-white">
-              Chuyên mục: {submenu.title}
+              Chuyên mục: {currentSubmenu.title}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300">
-              Tổng hợp bài viết chuyên sâu thuộc chủ đề {submenu.title}.
+              Tổng hợp bài viết chuyên sâu thuộc chủ đề {currentSubmenu.title}.
             </p>
           </div>
         </div>
@@ -88,7 +82,7 @@ export default async function PublicSubmenuOrArticlePage({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span className="font-semibold text-navy bg-navy/10 px-2.5 py-0.5 rounded-md">
-                      {submenu.title}
+                      {currentSubmenu.title}
                     </span>
                     {art.publishedAt && (
                       <span className="flex items-center gap-1">

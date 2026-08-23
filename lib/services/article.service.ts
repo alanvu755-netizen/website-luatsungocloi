@@ -52,6 +52,8 @@ export async function getArticles(siteId: string, options?: ArticleFilterOptions
 export async function getPublicArticles(
   siteId: string,
   options?: {
+    menuId?: string;
+    submenuId?: string;
     menuSlug?: string;
     submenuSlug?: string;
     page?: number;
@@ -65,15 +67,19 @@ export async function getPublicArticles(
   const where: any = {
     siteId,
     status: "PUBLISHED",
-    menu: { status: "VISIBLE" },
   };
 
-  if (options?.menuSlug) {
-    where.menu = { slug: options.menuSlug, status: "VISIBLE" };
-  }
-
-  if (options?.submenuSlug) {
-    where.submenu = { slug: options.submenuSlug, status: "VISIBLE" };
+  if (options?.submenuId) {
+    where.submenuId = options.submenuId;
+  } else if (options?.menuId) {
+    where.menuId = options.menuId;
+  } else {
+    if (options?.menuSlug) {
+      where.menu = { slug: options.menuSlug, status: "VISIBLE" };
+    }
+    if (options?.submenuSlug) {
+      where.submenu = { slug: options.submenuSlug, status: "VISIBLE" };
+    }
   }
 
   const [articles, totalCount] = await Promise.all([

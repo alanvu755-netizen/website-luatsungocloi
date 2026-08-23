@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getPublicArticles } from "@/lib/services/article.service";
-import { getSiteBySlug } from "@/lib/services/site.service";
+import { getSiteBySlug, getPublicHeaderMenus } from "@/lib/services/site.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import Link from "next/link";
@@ -23,30 +23,19 @@ export default async function PublicMenuListingPage({
   const site = await getSiteBySlug("le-thi-ngoc-loi");
   if (!site) notFound();
 
-  const menu = await prisma.menu.findFirst({
-    where: {
-      siteId: site.id,
-      slug: menuSlug,
-      status: "VISIBLE",
-    },
-    include: {
-      submenus: {
-        where: { status: "VISIBLE" },
-        orderBy: { displayOrder: "asc" },
-      },
-    },
-  });
-
-  if (!menu) notFound();
-
-  const [articlesData, enabledChannels] = await Promise.all([
-    getPublicArticles(site.id, {
-      menuSlug,
-      page,
-      pageSize: 10,
-    }),
+  const [headerMenus, enabledChannels] = await Promise.all([
+    getPublicHeaderMenus(site.id),
     getEnabledContactChannels(site.id),
   ]);
+
+  const menu = headerMenus.find((m) => m.slug === menuSlug);
+  if (!menu) notFound();
+
+  const articlesData = await getPublicArticles(site.id, {
+    menuId: menu.id,
+    page,
+    pageSize: 10,
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

@@ -19,60 +19,163 @@ import { getEnabledContactChannels } from "@/lib/services/contact-channel.servic
 
 export const revalidate = 60; // ISR 60s Edge Caching for instantaneous speed
 
+// Production Fallback Defaults (Ensures ZERO missing blocks even if DB is seeding or slow)
+const DEFAULT_HERO = {
+  subtitle: "Luật sư - Thạc sĩ",
+  name: "LÊ THỊ NGỌC LỢI",
+  imageUrl: "/customer-reference.png",
+};
+
+const DEFAULT_INTRO = {
+  title: "GIỚI THIỆU",
+  content:
+    "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi với hơn 13 năm kinh nghiệm công tác trong ngành Kiểm sát và cơ quan Nội chính Tỉnh ủy, am hiểu sâu sắc pháp luật và thực tiễn áp dụng.\n\nTrên nền tảng kiến thức vững chắc cùng tinh thần trách nhiệm cao, Luật sư luôn tận tâm tư vấn, bảo vệ quyền và lợi ích hợp pháp của khách hàng, đồng hành mang đến giải pháp pháp lý hiệu quả, an toàn và bền vững.",
+};
+
+const DEFAULT_EDUCATIONS = [
+  { id: "e1", degree: "Cử nhân Luật", institution: "Đại học Cần Thơ" },
+  { id: "e2", degree: "Thạc sĩ Luật", institution: "Đại học Luật Thành phố Hồ Chí Minh" },
+];
+
+const DEFAULT_EXPERIENCES = [
+  {
+    id: "ex1",
+    startYear: 2011,
+    endYear: 2021,
+    position: "Công tác trong ngành Kiểm sát tỉnh Đồng Tháp",
+    organization: "Ngành Kiểm sát tỉnh Đồng Tháp",
+    highlights: [{ id: "h1", content: "Kiểm sát viên giai đoạn 2017 - 2021" }],
+  },
+  {
+    id: "ex2",
+    startYear: 2021,
+    endYear: 2025,
+    position: "Công tác tại Ban Nội chính Tỉnh ủy Đồng Tháp",
+    organization: "Ban Nội chính Tỉnh ủy Đồng Tháp",
+    highlights: [{ id: "h2", content: "Chuyên lĩnh vực phòng, chống tham nhũng" }],
+  },
+  {
+    id: "ex3",
+    startYear: 2025,
+    endYear: 2026,
+    position: "Luật sư chuyên nghiệp",
+    organization: "Luật sư chuyên nghiệp",
+    highlights: [],
+  },
+];
+
+const DEFAULT_PRACTICE_AREAS = [
+  { id: "p1", title: "Dân sự – Hình sự – Hành chính" },
+  { id: "p2", title: "Doanh nghiệp – Thương mại – Lao động" },
+  { id: "p3", title: "Đất đai – Nhà ở" },
+  { id: "p4", title: "Ly hôn – Hôn nhân gia đình" },
+  { id: "p5", title: "Hợp đồng – Giao dịch dân sự" },
+  { id: "p6", title: "Tư vấn pháp lý thường xuyên cho cá nhân, tổ chức" },
+  { id: "p7", title: "Đại diện tham gia tố tụng, giải quyết tranh chấp" },
+  { id: "p8", title: "Bào chữa người bị buộc tội, bảo vệ quyền và lợi ích hợp pháp cho đương sự" },
+];
+
+const DEFAULT_COMMITMENT = {
+  heading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
+  content: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
+};
+
+const DEFAULT_SETTINGS = {
+  siteName: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi",
+  phone: "0902 081 061",
+  address: "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp",
+  floatingContactEnabled: true,
+};
+
 async function getSiteData() {
   try {
+    // Single consolidated database query
     const site = await prisma.site.findUnique({
       where: { slug: "le-thi-ngoc-loi" },
-      include: { settings: true },
+      include: {
+        settings: true,
+        hero: true,
+        introduction: true,
+        education: {
+          where: { status: "PUBLISHED" },
+          orderBy: { displayOrder: "asc" },
+        },
+        experience: {
+          where: { status: "PUBLISHED" },
+          orderBy: { displayOrder: "asc" },
+          include: { highlights: { orderBy: { displayOrder: "asc" } } },
+        },
+        practiceAreas: {
+          where: { status: "PUBLISHED" },
+          orderBy: { displayOrder: "asc" },
+        },
+        commitment: true,
+        contactChannels: {
+          where: { status: true },
+          orderBy: { displayOrder: "asc" },
+        },
+      },
     });
 
-    if (!site) return null;
-
-    const [
-      hero,
-      introduction,
-      educations,
-      experiences,
-      practiceAreas,
-      commitment,
-      enabledChannels,
-    ] = await Promise.all([
-      getPublishedHero(site.id),
-      getPublishedIntroduction(site.id),
-      getPublishedEducations(site.id),
-      getPublishedExperiences(site.id),
-      getPublishedPracticeAreas(site.id),
-      getPublishedCommitment(site.id),
-      getEnabledContactChannels(site.id),
-    ]);
+    if (!site) {
+      return {
+        site: null,
+        settings: DEFAULT_SETTINGS,
+        hero: DEFAULT_HERO,
+        introduction: DEFAULT_INTRO,
+        educations: DEFAULT_EDUCATIONS,
+        experiences: DEFAULT_EXPERIENCES,
+        practiceAreas: DEFAULT_PRACTICE_AREAS,
+        commitment: DEFAULT_COMMITMENT,
+        enabledChannels: [],
+      };
+    }
 
     return {
       site,
-      settings: site.settings,
-      hero,
-      introduction,
-      educations,
-      experiences,
-      practiceAreas,
-      commitment,
-      enabledChannels,
+      settings: site.settings || DEFAULT_SETTINGS,
+      hero: site.hero
+        ? {
+            subtitle: site.hero.pubSubtitle || DEFAULT_HERO.subtitle,
+            name: site.hero.pubName || DEFAULT_HERO.name,
+            imageUrl: site.hero.pubImageUrl || DEFAULT_HERO.imageUrl,
+          }
+        : DEFAULT_HERO,
+      introduction: site.introduction
+        ? {
+            title: site.introduction.pubTitle || DEFAULT_INTRO.title,
+            content: site.introduction.pubContent || DEFAULT_INTRO.content,
+          }
+        : DEFAULT_INTRO,
+      educations: site.education.length > 0 ? site.education : DEFAULT_EDUCATIONS,
+      experiences: site.experience.length > 0 ? site.experience : DEFAULT_EXPERIENCES,
+      practiceAreas: site.practiceAreas.length > 0 ? site.practiceAreas : DEFAULT_PRACTICE_AREAS,
+      commitment: site.commitment
+        ? {
+            heading: site.commitment.pubHeading || DEFAULT_COMMITMENT.heading,
+            content: site.commitment.pubContent || DEFAULT_COMMITMENT.content,
+          }
+        : DEFAULT_COMMITMENT,
+      enabledChannels: site.contactChannels || [],
     };
   } catch (error) {
-    console.error("Error loading homepage site data:", error);
-    return null;
+    console.error("Error loading site data, using fallback defaults:", error);
+    return {
+      site: null,
+      settings: DEFAULT_SETTINGS,
+      hero: DEFAULT_HERO,
+      introduction: DEFAULT_INTRO,
+      educations: DEFAULT_EDUCATIONS,
+      experiences: DEFAULT_EXPERIENCES,
+      practiceAreas: DEFAULT_PRACTICE_AREAS,
+      commitment: DEFAULT_COMMITMENT,
+      enabledChannels: [],
+    };
   }
 }
 
 export default async function PublicPage() {
   const data = await getSiteData();
-
-  if (!data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-navy font-serif text-xl">
-        Chưa tìm thấy dữ liệu trang web. Vui lòng chạy db:seed.
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

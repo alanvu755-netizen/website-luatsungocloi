@@ -3,13 +3,27 @@ import { getExperiences, createExperience, deleteExperience } from "@/lib/servic
 import { redirect } from "next/navigation";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
 
+interface HighlightItem {
+  id: string;
+  content: string;
+}
+
+interface ExperienceItem {
+  id: string;
+  startYear: number;
+  endYear?: number | null;
+  position: string;
+  organization: string;
+  highlights: HighlightItem[];
+}
+
 export default async function AdminExperiencePage() {
   const user = await getAuthenticatedUser();
   const siteId = user?.siteId;
 
   if (!siteId) redirect("/admin/login");
 
-  let experiences: any[] = [];
+  let experiences: ExperienceItem[] = [];
   try {
     experiences = await getExperiences(siteId);
   } catch (err) {
@@ -111,7 +125,7 @@ export default async function AdminExperiencePage() {
                   <p className="text-xs text-slate-600">{item.organization}</p>
                   {item.highlights.length > 0 && (
                     <ul className="mt-2 text-xs text-slate-500 list-disc pl-4">
-                      {item.highlights.map((hl) => (
+                      {item.highlights.map((hl: HighlightItem) => (
                         <li key={hl.id}>{hl.content}</li>
                       ))}
                     </ul>

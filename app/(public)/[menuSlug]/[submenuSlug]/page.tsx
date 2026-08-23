@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+import { prisma, withTimeout } from "@/lib/db/prisma";
 import { getPublicArticles, getPublicArticleBySlug } from "@/lib/services/article.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
@@ -8,6 +8,12 @@ import { ChevronRight, Calendar, ArrowRight, PhoneCall, ShieldCheck } from "luci
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
 export const revalidate = 60; // ISR 60s Edge Caching
+
+const DEFAULT_SETTINGS = {
+  siteName: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi",
+  phone: "0902 081 061",
+  address: "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp",
+};
 
 export default async function PublicSubmenuOrArticlePage({
   params,
@@ -19,33 +25,51 @@ export default async function PublicSubmenuOrArticlePage({
   const { menuSlug, submenuSlug } = params;
   const page = parseInt(searchParams?.page || "1");
 
-  const site = await prisma.site.findUnique({
-    where: { slug: "le-thi-ngoc-loi" },
-    include: { settings: true },
-  });
-  if (!site) notFound();
+  const site = await withTimeout(
+    prisma.site.findUnique({
+      where: { slug: "le-thi-ngoc-loi" },
+      include: { settings: true },
+    }),
+    { id: "default_site_id", slug: "le-thi-ngoc-loi", settings: DEFAULT_SETTINGS } as any,
+    600
+  );
 
-  // Check if target is a Submenu (Chuyên mục)
-  const submenu = await prisma.submenu.findFirst({
-    where: {
-      siteId: site.id,
+  const siteId = site?.id || "default_site_id";
+
+  // Check if target is a Submenu (Chuyên mục) with 600ms max timeout
+  const submenu = await withTimeout(
+    prisma.submenu.findFirst({
+      where: {
+        siteId,
+        slug: submenuSlug,
+        status: "VISIBLE",
+        menu: { slug: menuSlug, status: "VISIBLE" },
+      },
+      include: { menu: true },
+    }),
+    {
+      id: "sub_fallback",
+      title: submenuSlug === "dat-dai" ? "Đất đai – Nhà ở" : submenuSlug === "dan-su-hon-nhan" ? "Dân sự – Hôn nhân" : "Chuyên mục tư vấn",
       slug: submenuSlug,
-      status: "VISIBLE",
-      menu: { slug: menuSlug, status: "VISIBLE" },
-    },
-    include: { menu: true },
-  });
+      menu: { title: "Thư viện pháp luật", slug: menuSlug },
+    } as any,
+    600
+  );
 
-  const enabledChannels = await getEnabledContactChannels(site.id);
+  const enabledChannels = await withTimeout(getEnabledContactChannels(siteId), [], 500);
 
   // CASE 1: Render Submenu Article Listing
   if (submenu) {
-    const articlesData = await getPublicArticles(site.id, {
-      menuSlug,
-      submenuSlug,
-      page,
-      pageSize: 10,
-    });
+    const articlesData = await withTimeout(
+      getPublicArticles(siteId, {
+        menuSlug,
+        submenuSlug,
+        page,
+        pageSize: 10,
+      }),
+      { articles: [], totalCount: 0, totalPages: 1, currentPage: 1 },
+      800
+    );
 
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">

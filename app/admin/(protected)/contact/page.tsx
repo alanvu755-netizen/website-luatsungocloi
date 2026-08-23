@@ -2,6 +2,38 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getContactChannels, updateContactChannel, toggleContactChannelStatus } from "@/lib/services/contact-channel.service";
 import { redirect } from "next/navigation";
 import { PhoneCall, CheckCircle2, AlertCircle, Globe } from "lucide-react";
+import { withTimeout } from "@/lib/db/prisma";
+
+const DEFAULT_CONTACT_CHANNELS = [
+  {
+    id: "ch_zalo",
+    platform: "ZALO",
+    label: "Zalo Tư Vấn",
+    url: "https://zalo.me/0902081061",
+    status: true,
+  },
+  {
+    id: "ch_facebook",
+    platform: "FACEBOOK",
+    label: "Facebook Messenger",
+    url: "https://m.me/luatsu.lethingocloi",
+    status: true,
+  },
+  {
+    id: "ch_phone",
+    platform: "PHONE",
+    label: "Hotline 24/7",
+    url: "tel:0902081061",
+    status: true,
+  },
+  {
+    id: "ch_email",
+    platform: "EMAIL",
+    label: "Email Tư Vấn",
+    url: "mailto:luatsuloi@gmail.com",
+    status: true,
+  },
+];
 
 export default async function AdminContactPage({
   searchParams,
@@ -13,7 +45,8 @@ export default async function AdminContactPage({
 
   if (!siteId) redirect("/admin/login");
 
-  const channels = await getContactChannels(siteId);
+  const dbChannels = await withTimeout(getContactChannels(siteId), [], 800);
+  const channels = dbChannels.length > 0 ? dbChannels : DEFAULT_CONTACT_CHANNELS;
 
   async function handleToggle(formData: FormData) {
     "use server";

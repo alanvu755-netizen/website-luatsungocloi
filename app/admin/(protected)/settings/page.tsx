@@ -1,42 +1,61 @@
-import { getAuthenticatedUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/db/prisma";
-import { redirect } from "next/navigation";
-import { Settings, CheckCircle } from "lucide-react";
+"use client";
 
-export default async function AdminSettingsPage({
-  searchParams,
-}: {
-  searchParams?: { success?: string };
-}) {
-  const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+import { useState, useEffect } from "react";
+import { Settings, CheckCircle, Save, AlertCircle, Check } from "lucide-react";
 
-  if (!siteId) redirect("/admin/login");
+export default function AdminSettingsPage() {
+  const [phone, setPhone] = useState("0902 081 061");
+  const [email, setEmail] = useState("luatsuloi@gmail.com");
+  const [address, setAddress] = useState("Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp");
+  const [floatingContactEnabled, setFloatingContactEnabled] = useState(true);
 
-  const settings = await prisma.siteSettings.findUnique({ where: { siteId } });
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  async function handleUpdateSettings(formData: FormData) {
-    "use server";
-    const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setPhone(data.settings.phone || "0902 081 061");
+          setEmail(data.settings.email || "luatsuloi@gmail.com");
+          setAddress(data.settings.address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp");
+          setFloatingContactEnabled(data.settings.floatingContactEnabled ?? true);
+        }
+      })
+      .catch(() => console.error("Error fetching admin settings"));
+  }, []);
 
-    const phone = formData.get("phone") as string;
-    const email = formData.get("email") as string;
-    const address = formData.get("address") as string;
-    const floatingContactEnabled = formData.get("floatingContactEnabled") === "on";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setFeedback(null);
 
-    await prisma.siteSettings.update({
-      where: { siteId: authUser.siteId },
-      data: {
-        phone,
-        email,
-        address,
-        floatingContactEnabled,
-      },
-    });
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          email,
+          address,
+          floatingContactEnabled,
+        }),
+      });
 
-    redirect("/admin/settings?success=Cập nhật cài đặt chung thành công");
-  }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Không thể cập nhật cài đặt.");
+
+      setFeedback({
+        type: "success",
+        message: "✓ ĐÃ LƯU THÀNH CÔNG! Thông tin cài đặt chung đã được cập nhật ra Website Public.",
+      });
+    } catch (err: any) {
+      setFeedback({ type: "error", message: err.message || "Lỗi cập nhật cài đặt." });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -48,15 +67,25 @@ export default async function AdminSettingsPage({
         </p>
       </div>
 
-      {searchParams?.success && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{searchParams.success}</span>
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-sm flex items-center gap-3 border shadow-xs ${
+            feedback.type === "success"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-800 font-medium"
+              : "bg-red-50 border-red-300 text-red-700"
+          }`}
+        >
+          {feedback.type === "success" ? (
+            <Check className="w-5 h-5 flex-shrink-0 text-emerald-600 stroke-[3]" />
+          ) : (
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+          )}
+          <span>{feedback.message}</span>
         </div>
       )}
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-        <form action={handleUpdateSettings} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
@@ -64,8 +93,8 @@ export default async function AdminSettingsPage({
             </label>
             <input
               type="text"
-              name="phone"
-              defaultValue={settings?.phone || "0902 081 061"}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-navy focus:ring-2 focus:ring-navy focus:outline-none"
             />
@@ -77,8 +106,8 @@ export default async function AdminSettingsPage({
             </label>
             <input
               type="email"
-              name="email"
-              defaultValue={settings?.email || "luatsuloi@gmail.com"}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-navy focus:outline-none"
             />
           </div>
@@ -88,20 +117,20 @@ export default async function AdminSettingsPage({
               Địa chỉ trụ sở
             </label>
             <textarea
-              name="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               rows={3}
-              defaultValue={settings?.address || ""}
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-navy focus:outline-none"
             />
           </div>
 
           <div className="pt-3 border-t border-slate-100">
-            <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
               <input
                 type="checkbox"
-                name="floatingContactEnabled"
-                defaultChecked={settings?.floatingContactEnabled ?? true}
+                checked={floatingContactEnabled}
+                onChange={(e) => setFloatingContactEnabled(e.target.checked)}
                 className="w-4 h-4 rounded text-navy focus:ring-navy"
               />
               <div>
@@ -117,9 +146,11 @@ export default async function AdminSettingsPage({
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all"
+            disabled={saving}
+            className="w-full py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            Lưu cài đặt chung
+            <Save className="w-4 h-4" />
+            <span>{saving ? "Đang lưu cài đặt..." : "Lưu cài đặt chung (Save Settings)"}</span>
           </button>
         </form>
       </div>

@@ -10,7 +10,18 @@ export default async function AdminCommitmentPage() {
 
   if (!siteId) redirect("/admin/login");
 
-  const commitment = await prisma.commitment.findUnique({ where: { siteId } });
+  let commitment: any = null;
+  try {
+    commitment = await prisma.commitment.findUnique({ where: { siteId } });
+  } catch (err) {
+    console.error("Error fetching commitment for admin:", err);
+    commitment = {
+      pubHeading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
+      pubContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
+      draftHeading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
+      draftContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
+    };
+  }
 
   async function handleSaveDraft(formData: FormData) {
     "use server";

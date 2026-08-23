@@ -9,7 +9,22 @@ export default async function AdminPracticeAreasPage() {
 
   if (!siteId) redirect("/admin/login");
 
-  const practiceAreas = await getPracticeAreas(siteId);
+  let practiceAreas: any[] = [];
+  try {
+    practiceAreas = await getPracticeAreas(siteId);
+  } catch (err) {
+    console.error("Error fetching practice areas for admin:", err);
+    practiceAreas = [
+      { id: "p1", title: "Dân sự – Hình sự – Hành chính" },
+      { id: "p2", title: "Doanh nghiệp – Thương mại – Lao động" },
+      { id: "p3", title: "Đất đai – Nhà ở" },
+      { id: "p4", title: "Ly hôn – Hôn nhân gia đình" },
+      { id: "p5", title: "Hợp đồng – Giao dịch dân sự" },
+      { id: "p6", title: "Tư vấn pháp lý thường xuyên cho cá nhân, tổ chức" },
+      { id: "p7", title: "Đại diện tham gia tố tụng, giải quyết tranh chấp" },
+      { id: "p8", title: "Bào chữa người bị buộc tội, bảo vệ quyền và lợi ích hợp pháp cho đương sự" },
+    ];
+  }
 
   async function handleAdd(formData: FormData) {
     "use server";

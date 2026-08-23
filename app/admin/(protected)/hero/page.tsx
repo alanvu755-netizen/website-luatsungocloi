@@ -13,7 +13,7 @@ export default function AdminHeroPage() {
   const [pubName, setPubName] = useState("LÊ THỊ NGỌC LỢI");
   const [pubImageUrl, setPubImageUrl] = useState("/docs/design/customer-reference.png");
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);

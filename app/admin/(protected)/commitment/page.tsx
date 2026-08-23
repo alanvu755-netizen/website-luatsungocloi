@@ -17,7 +17,7 @@ export default async function AdminCommitmentPage() {
       pubContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
       draftHeading: "Tận tâm – Chuyên nghiệp – Bảo mật – Hiệu quả",
       draftContent: "Cam kết đồng hành cùng khách hàng bằng sự thấu hiểu và giải pháp pháp lý tối ưu nhất.",
-    },
+    } as any,
     800
   );
 

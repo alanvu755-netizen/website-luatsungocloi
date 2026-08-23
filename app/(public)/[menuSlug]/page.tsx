@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getPublicArticles } from "@/lib/services/article.service";
+import { getSiteBySlug } from "@/lib/services/site.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import Link from "next/link";
@@ -19,10 +20,7 @@ export default async function PublicMenuListingPage({
   const { menuSlug } = params;
   const page = parseInt(searchParams?.page || "1");
 
-  const site = await prisma.site.findUnique({
-    where: { slug: "le-thi-ngoc-loi" },
-    include: { settings: true },
-  });
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
   if (!site) notFound();
 
   const menu = await prisma.menu.findFirst({

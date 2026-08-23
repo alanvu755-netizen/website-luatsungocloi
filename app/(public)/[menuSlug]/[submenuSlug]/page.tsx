@@ -1,5 +1,6 @@
-import { prisma, withTimeout } from "@/lib/db/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { getPublicArticles, getPublicArticleBySlug } from "@/lib/services/article.service";
+import { getSiteBySlug } from "@/lib/services/site.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import Link from "next/link";
@@ -25,51 +26,30 @@ export default async function PublicSubmenuOrArticlePage({
   const { menuSlug, submenuSlug } = params;
   const page = parseInt(searchParams?.page || "1");
 
-  const site = await withTimeout(
-    prisma.site.findUnique({
-      where: { slug: "le-thi-ngoc-loi" },
-      include: { settings: true },
-    }),
-    { id: "default_site_id", slug: "le-thi-ngoc-loi", settings: DEFAULT_SETTINGS } as any,
-    600
-  );
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) notFound();
 
-  const siteId = site?.id || "default_site_id";
-
-  // Check if target is a Submenu (Chuyên mục) with 600ms max timeout
-  const submenu = await withTimeout(
+  const [submenu, enabledChannels] = await Promise.all([
     prisma.submenu.findFirst({
       where: {
-        siteId,
+        siteId: site.id,
         slug: submenuSlug,
         status: "VISIBLE",
         menu: { slug: menuSlug, status: "VISIBLE" },
       },
       include: { menu: true },
     }),
-    {
-      id: "sub_fallback",
-      title: submenuSlug === "dat-dai" ? "Đất đai – Nhà ở" : submenuSlug === "dan-su-hon-nhan" ? "Dân sự – Hôn nhân" : "Chuyên mục tư vấn",
-      slug: submenuSlug,
-      menu: { title: "Thư viện pháp luật", slug: menuSlug },
-    } as any,
-    600
-  );
-
-  const enabledChannels = await withTimeout(getEnabledContactChannels(siteId), [], 500);
+    getEnabledContactChannels(site.id),
+  ]);
 
   // CASE 1: Render Submenu Article Listing
   if (submenu) {
-    const articlesData = await withTimeout(
-      getPublicArticles(siteId, {
-        menuSlug,
-        submenuSlug,
-        page,
-        pageSize: 10,
-      }),
-      { articles: [], totalCount: 0, totalPages: 1, currentPage: 1 },
-      800
-    );
+    const articlesData = await getPublicArticles(site.id, {
+      menuSlug,
+      submenuSlug,
+      page,
+      pageSize: 10,
+    });
 
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">

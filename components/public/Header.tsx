@@ -1,27 +1,11 @@
 import Link from "next/link";
 import { Scale, ChevronDown } from "lucide-react";
-import { prisma } from "@/lib/db/prisma";
+import { getSiteBySlug, getPublicHeaderMenus } from "@/lib/services/site.service";
 
 export default async function Header() {
-  const site = await prisma.site.findUnique({
-    where: { slug: "le-thi-ngoc-loi" },
-  });
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
 
-  const menus = site
-    ? await prisma.menu.findMany({
-        where: {
-          siteId: site.id,
-          status: "VISIBLE",
-        },
-        include: {
-          submenus: {
-            where: { status: "VISIBLE" },
-            orderBy: { displayOrder: "asc" },
-          },
-        },
-        orderBy: { displayOrder: "asc" },
-      })
-    : [];
+  const menus = site ? await getPublicHeaderMenus(site.id) : [];
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">

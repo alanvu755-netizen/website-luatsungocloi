@@ -55,13 +55,16 @@ export default async function AdminContactPage({
     const currentStatus = formData.get("currentStatus") === "true";
     const newStatus = !currentStatus;
 
+    let targetRedirect = "";
     try {
       await toggleContactChannelStatus(id, authUser.siteId, newStatus);
-      redirect("/admin/contact?success=Cập nhật trạng thái thành công");
+      targetRedirect = "/admin/contact?success=Cập nhật trạng thái thành công";
     } catch (err: any) {
+      if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
       const msg = encodeURIComponent(err.message || "Lỗi cập nhật kênh liên hệ");
-      redirect(`/admin/contact?error=${msg}`);
+      targetRedirect = `/admin/contact?error=${msg}`;
     }
+    if (targetRedirect) redirect(targetRedirect);
   }
 
   async function handleUpdateChannel(formData: FormData) {
@@ -75,6 +78,7 @@ export default async function AdminContactPage({
     const label = formData.get("label") as string;
     const status = formData.get("status") === "on";
 
+    let targetRedirect = "";
     try {
       await updateContactChannel(id, authUser.siteId, {
         platform,
@@ -82,11 +86,13 @@ export default async function AdminContactPage({
         url,
         status,
       });
-      redirect("/admin/contact?success=Cập nhật kênh liên hệ thành công");
+      targetRedirect = "/admin/contact?success=Cập nhật kênh liên hệ thành công";
     } catch (err: any) {
+      if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
       const msg = encodeURIComponent(err.message || "Lỗi cập nhật kênh liên hệ");
-      redirect(`/admin/contact?error=${msg}`);
+      targetRedirect = `/admin/contact?error=${msg}`;
     }
+    if (targetRedirect) redirect(targetRedirect);
   }
 
   return (

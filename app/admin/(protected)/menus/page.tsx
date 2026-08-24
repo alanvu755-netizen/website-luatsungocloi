@@ -30,10 +30,11 @@ export default async function AdminMenusPage({
         displayOrder: menus.length + 1,
         status: "VISIBLE",
       });
-      redirect("/admin/menus");
     } catch (err: any) {
+      if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
       redirect(`/admin/menus?error=${encodeURIComponent(err.message)}`);
     }
+    redirect("/admin/menus");
   }
 
   async function handleToggleMenuStatus(formData: FormData) {
@@ -74,10 +75,11 @@ export default async function AdminMenusPage({
         slug,
         status: "VISIBLE",
       });
-      redirect("/admin/menus");
     } catch (err: any) {
+      if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
       redirect(`/admin/menus?error=${encodeURIComponent(err.message)}`);
     }
+    redirect("/admin/menus");
   }
 
   async function handleDeleteSubmenu(formData: FormData) {

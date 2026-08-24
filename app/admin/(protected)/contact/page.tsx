@@ -2,6 +2,7 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getContactChannels, updateContactChannel, toggleContactChannelStatus } from "@/lib/services/contact-channel.service";
 import { redirect } from "next/navigation";
 import { PhoneCall, CheckCircle2, AlertCircle, Globe } from "lucide-react";
+import { ToggleSubmitButton, SaveSubmitButton } from "@/components/admin/ChannelSubmitButton";
 
 const DEFAULT_CONTACT_CHANNELS = [
   {
@@ -159,16 +160,7 @@ export default async function AdminContactPage({
               <form action={handleToggle}>
                 <input type="hidden" name="id" value={ch.id} />
                 <input type="hidden" name="currentStatus" value={String(ch.status)} />
-                <button
-                  type="submit"
-                  className={`px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all ${
-                    ch.status
-                      ? "bg-slate-200 hover:bg-slate-300 text-slate-800"
-                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  }`}
-                >
-                  {ch.status ? "Tắt (OFF)" : "Bật (ON)"}
-                </button>
+                <ToggleSubmitButton currentStatus={ch.status} />
               </form>
             </div>
 
@@ -216,12 +208,7 @@ export default async function AdminContactPage({
                   <span>Bật hiển thị kênh này trên Public Website</span>
                 </label>
 
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all"
-                >
-                  Lưu thay đổi kênh
-                </button>
+                <SaveSubmitButton />
               </div>
             </form>
           </div>

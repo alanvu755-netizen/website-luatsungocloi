@@ -163,7 +163,8 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* AI Add-on Banner */}
+      {/* AI Add-on Banner (Temporarily Hidden) */}
+      {/* 
       <div className="bg-gradient-to-r from-slate-900 via-navy to-slate-900 text-white rounded-xl p-6 shadow-md border border-navy-light/40 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-gold/20 text-gold flex items-center justify-center border border-gold/30">
@@ -188,6 +189,7 @@ export default async function AdminDashboardPage() {
           Mở AI Content Studio →
         </Link>
       </div>
+      */}
 
     </div>
   );

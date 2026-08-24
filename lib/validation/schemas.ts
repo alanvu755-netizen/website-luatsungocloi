@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Contact Channel Schema
 export const contactChannelSchema = z.object({
-  platform: z.enum(["ZALO", "TELEGRAM", "FACEBOOK", "LINKEDIN", "YOUTUBE", "WHATSAPP", "OTHER"]),
+  platform: z.enum(["ZALO", "TELEGRAM", "FACEBOOK", "LINKEDIN", "YOUTUBE", "WHATSAPP", "PHONE", "EMAIL", "OTHER"]),
   label: z.string().min(1, "Vui lòng nhập tên nhãn"),
   value: z.string().optional(),
   url: z.string().url("URL không đúng định dạng. Ví dụ: https://zalo.me/0902081061"),

@@ -44,8 +44,7 @@ export default async function AdminContactPage({
 
   if (!siteId) redirect("/admin/login");
 
-  const dbChannels = await getContactChannels(siteId);
-  const channels = dbChannels.length > 0 ? dbChannels : DEFAULT_CONTACT_CHANNELS;
+  const channels = await getContactChannels(siteId);
 
   async function handleToggle(formData: FormData) {
     "use server";
@@ -71,12 +70,14 @@ export default async function AdminContactPage({
     if (!authUser?.siteId) return;
 
     const id = formData.get("id") as string;
+    const platform = (formData.get("platform") as any) || undefined;
     const url = formData.get("url") as string;
     const label = formData.get("label") as string;
     const status = formData.get("status") === "on";
 
     try {
       await updateContactChannel(id, authUser.siteId, {
+        platform,
         label,
         url,
         status,
@@ -168,6 +169,7 @@ export default async function AdminContactPage({
             {/* Detailed Update Form */}
             <form action={handleUpdateChannel} className="space-y-4">
               <input type="hidden" name="id" value={ch.id} />
+              <input type="hidden" name="platform" value={ch.platform} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

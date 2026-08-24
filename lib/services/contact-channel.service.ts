@@ -104,7 +104,7 @@ export async function updateContactChannel(
 
   if (!existing) {
     const channels = await getContactChannels(siteId);
-    existing = channels.find((c) => c.id === id || c.platform === data.platform);
+    existing = channels.find((c) => c.id === id || c.platform === data.platform) || null;
   }
 
   const targetUrl = data.url !== undefined ? data.url : existing?.url;
@@ -159,7 +159,7 @@ export async function toggleContactChannelStatus(
 
   if (!existing) {
     const channels = await getContactChannels(siteId);
-    existing = channels.find((c) => c.id === id);
+    existing = channels.find((c) => c.id === id) || null;
   }
 
   if (!existing) {

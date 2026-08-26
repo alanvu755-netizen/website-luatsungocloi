@@ -168,11 +168,19 @@ export default async function AdminArticlesPage({
                         <Edit className="w-4 h-4" />
                       </Link>
 
-                      <form action={handleDelete} className="inline-block">
+                      <form
+                        action={handleDelete}
+                        className="inline-block"
+                        onSubmit={(e) => {
+                          if (!confirm("⚠️ XÁC NHẬN XÓA: Bạn có chắc chắn muốn xóa bài viết này không?\n\nHành động này sẽ xóa vĩnh viễn bài viết khỏi hệ thống và không thể hoàn tác.")) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
                         <input type="hidden" name="id" value={art.id} />
                         <button
                           type="submit"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Xóa bài viết"
                         >
                           <Trash2 className="w-4 h-4" />

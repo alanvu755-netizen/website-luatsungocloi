@@ -8,7 +8,21 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Calendar, ArrowRight, PhoneCall, ShieldCheck } from "lucide-react";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
+export const dynamic = "force-static";
 export const revalidate = 60; // ISR 60s Edge Caching
+
+export async function generateStaticParams() {
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) return [];
+  const menus = await getPublicHeaderMenus(site.id);
+  const params: { menuSlug: string; submenuSlug: string }[] = [];
+  for (const menu of menus) {
+    for (const sub of menu.submenus) {
+      params.push({ menuSlug: menu.slug, submenuSlug: sub.slug });
+    }
+  }
+  return params;
+}
 
 const DEFAULT_SETTINGS = {
   siteName: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi",
@@ -35,7 +49,9 @@ export default async function PublicSubmenuOrArticlePage({
   ]);
 
   const currentMenu = headerMenus.find((m) => m.slug === menuSlug);
-  const currentSubmenu = currentMenu?.submenus.find((s) => s.slug === submenuSlug);
+  const currentSubmenu = currentMenu?.submenus.find(
+    (s) => s.slug === submenuSlug || s.slug.includes(submenuSlug) || submenuSlug.includes(s.slug)
+  );
 
   // CASE 1: Render Submenu Article Listing
   if (currentSubmenu && currentMenu) {

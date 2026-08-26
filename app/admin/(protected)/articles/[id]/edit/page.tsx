@@ -17,14 +17,21 @@ interface Menu {
   submenus: Submenu[];
 }
 
+interface PracticeAreaOption {
+  id: string;
+  title: string;
+}
+
 export default function EditArticlePage() {
   const router = useRouter();
   const params = useParams();
   const articleId = params?.id as string;
 
   const [menus, setMenus] = useState<Menu[]>([]);
+  const [practiceAreas, setPracticeAreas] = useState<PracticeAreaOption[]>([]);
   const [selectedMenuId, setSelectedMenuId] = useState<string>("");
   const [selectedSubmenuId, setSelectedSubmenuId] = useState<string>("");
+  const [selectedPracticeAreaIds, setSelectedPracticeAreaIds] = useState<string[]>([]);
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -38,13 +45,15 @@ export default function EditArticlePage() {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
-    // Fetch Menus and Article Details
+    // Fetch Menus, Practice Areas, and Article Details
     Promise.all([
       fetch("/api/admin/menus").then((r) => r.json()),
+      fetch("/api/admin/practice-areas").then((r) => r.json()),
       fetch(`/api/admin/articles/${articleId}`).then((r) => r.json()),
     ])
-      .then(([menusData, articleData]) => {
+      .then(([menusData, paData, articleData]) => {
         if (menusData.menus) setMenus(menusData.menus);
+        if (paData.practiceAreas) setPracticeAreas(paData.practiceAreas);
         if (articleData.article) {
           const art = articleData.article;
           setTitle(art.title);
@@ -55,11 +64,22 @@ export default function EditArticlePage() {
           setMetaDescription(art.metaDescription || "");
           setSelectedMenuId(art.menuId);
           setSelectedSubmenuId(art.submenuId || "");
+          if (art.articlePracticeAreas) {
+            setSelectedPracticeAreaIds(
+              art.articlePracticeAreas.map((apa: any) => apa.practiceAreaId)
+            );
+          }
         }
       })
       .catch(() => setFeedback({ type: "error", message: "Không thể tải thông tin bài viết" }))
       .finally(() => setLoadingArticle(false));
   }, [articleId]);
+
+  const togglePracticeArea = (id: string) => {
+    setSelectedPracticeAreaIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async (status: "DRAFT" | "PUBLISHED") => {
     if (!title || !content || !selectedMenuId) {
@@ -77,6 +97,7 @@ export default function EditArticlePage() {
         body: JSON.stringify({
           menuId: selectedMenuId,
           submenuId: selectedSubmenuId || null,
+          practiceAreaIds: selectedPracticeAreaIds,
           title,
           slug,
           excerpt,
@@ -206,6 +227,41 @@ export default function EditArticlePage() {
             </select>
           </div>
         </div>
+
+        {/* Multi-Practice Area Checkbox Selection (N-N) */}
+        {practiceAreas.length > 0 && (
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label className="block text-xs font-bold uppercase text-navy">
+              Gán Lĩnh vực Hoạt động (N-N Multi-Selection)
+            </label>
+            <p className="text-[11px] text-slate-500">
+              Một bài viết có thể thuộc nhiều Lĩnh vực Chuyên môn khác nhau:
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+              {practiceAreas.map((pa) => {
+                const checked = selectedPracticeAreaIds.includes(pa.id);
+                return (
+                  <label
+                    key={pa.id}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                      checked
+                        ? "bg-navy/5 border-navy text-navy font-bold shadow-2xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => togglePracticeArea(pa.id)}
+                      className="rounded text-navy focus:ring-navy w-4 h-4"
+                    />
+                    <span>{pa.title}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">

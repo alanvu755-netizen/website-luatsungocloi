@@ -23,22 +23,26 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const { phone, email, address, floatingContactEnabled } = body;
+    const { phone, email, consultationNotificationEmail, address, floatingContactEnabled, footerDisclaimer } = body;
 
     const settings = await prisma.siteSettings.upsert({
       where: { siteId: user.siteId },
       update: {
         phone,
         email,
+        consultationNotificationEmail: consultationNotificationEmail || "luatsungocloi@gmail.com",
         address,
         floatingContactEnabled,
+        footerDisclaimer,
       },
       create: {
         siteId: user.siteId,
         phone: phone || "0902 081 061",
         email: email || "luatsuloi@gmail.com",
+        consultationNotificationEmail: consultationNotificationEmail || "luatsungocloi@gmail.com",
         address: address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp",
         floatingContactEnabled: floatingContactEnabled ?? true,
+        footerDisclaimer: footerDisclaimer || "© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.",
       },
     });
 

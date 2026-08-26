@@ -1,132 +1,124 @@
-import { Scale } from "lucide-react";
-import IntroductionSection from "@/components/public/IntroductionSection";
 import Image from "next/image";
+import { Heart, ShieldCheck, Zap, Lock, ArrowRight } from "lucide-react";
 
 interface HeroProps {
-  data: {
-    subtitle: string;
-    name: string;
+  data?: {
+    subtitle?: string;
+    name?: string;
     imageUrl?: string | null;
-    imageId?: string | null;
-    logoId?: string | null;
-  } | null;
-  introduction?: {
-    title: string;
-    content: string;
+    title1?: string | null;
+    title2?: string | null;
+    description?: string | null;
+    badgesJson?: string | null;
+    ctaPrimaryText?: string | null;
+    ctaSecondaryText?: string | null;
   } | null;
 }
 
-export default function Hero({ data, introduction }: HeroProps) {
-  const subtitle = data?.subtitle || "Luật sư - Thạc sĩ";
-  const name = data?.name || "LÊ THỊ NGỌC LỢI";
+export default function Hero({ data }: HeroProps) {
   const imageUrl = data?.imageUrl || "/customer-reference.png";
+  const title1 = data?.title1 || "ĐỒNG HÀNH PHÁP LÝ";
+  const title2 = data?.title2 || "BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP";
+  const description =
+    data?.description ||
+    "Luật sư Lê Thị Ngọc Lợi và cộng sự cam kết mang đến giải pháp pháp lý hiệu quả – tận tâm – bảo mật – chuyên nghiệp.";
+  const ctaPrimaryText = data?.ctaPrimaryText || "TƯ VẤN NGAY";
+  const ctaSecondaryText = data?.ctaSecondaryText || "XEM LĨNH VỰC HOẠT ĐỘNG";
+
+  let badges = [
+    { title: "Tận tâm", subtext: "Luôn đặt quyền lợi khách hàng lên hàng đầu", icon: Heart },
+    { title: "Chuyên nghiệp", subtext: "Kiến thức vững vàng kinh nghiệm thực tiễn", icon: ShieldCheck },
+    { title: "Hiệu quả", subtext: "Giải pháp tối ưu tiết kiệm thời gian", icon: Zap },
+    { title: "Bảo mật", subtext: "Cam kết bảo mật thông tin tuyệt đối", icon: Lock },
+  ];
+
+  if (data?.badgesJson) {
+    try {
+      const parsed = JSON.parse(data.badgesJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const iconMap: Record<string, any> = { Heart, ShieldCheck, Zap, Lock };
+        badges = parsed.map((b: any) => ({
+          title: b.title || "Tiêu chí",
+          subtext: b.subtext || "",
+          icon: iconMap[b.icon] || Heart,
+        }));
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
 
   return (
-    <section className="relative bg-white pt-0 pb-4 lg:pb-6 overflow-hidden border-b border-slate-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+    <section className="relative bg-[#051C38] text-white overflow-hidden py-10 lg:py-16 border-b border-navy-light/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* CỘT TRÁI: THƯƠNG HIỆU CÁ NHÂN & CARD GIỚI THIỆU (FLUSH ALIGNED WITH LOWER CONTENT GRID) */}
-          <div className="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left z-10 pt-4 sm:pt-6 pb-2 lg:pb-4 justify-between">
-            
-            <div className="flex flex-col items-center lg:items-start w-full">
-              {/* 1. Badge Icon Cán Cân Công Lý */}
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full border-2 border-navy/20 p-1 flex items-center justify-center mb-3 bg-white shadow-sm flex-shrink-0">
-                <div className="w-full h-full rounded-full border border-gold/40 flex items-center justify-center bg-navy text-gold">
-                  <Scale className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 text-gold stroke-[1.5]" />
-                </div>
-              </div>
-
-              {/* 2. Subtitle / Danh Xưng */}
-              <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl font-medium text-navy tracking-wide mb-1">
-                {subtitle}
-              </h2>
-
-              {/* 3. Main Name / Họ và Tên */}
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-navy tracking-tight uppercase leading-none mb-2">
-                {name}
-              </h1>
-
-              {/* 4. Gold Diamond Accent Divider */}
-              <div className="flex items-center gap-3 w-48 sm:w-56 my-2">
-                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent flex-1"></div>
-                <div className="w-2.5 h-2.5 bg-gold rotate-45 transform shadow-xs"></div>
-                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent flex-1"></div>
-              </div>
-            </div>
-
-            {/* 5. KHỐI GIỚI THIỆU (CARD) - HIỂN THỊ DƯỚI CHÂN DỤNG TRÊN MOBILE, DÓNG THẲNG LỀ TRÁI TRÊN DESKTOP */}
-            <div className="w-full mt-6 lg:mt-16 order-3 lg:order-none">
-              <IntroductionSection data={introduction ?? null} />
-            </div>
-
-          </div>
-
-          {/* CỘT PHẢI: KHỐI NỀN NAVY & CHÂN DỤNG (MOBILE ORDER-2: XẾP NGAY DƯỚI TÊN LUẬT SƯ THU GỌN 280PX, DESKTOP ORDER-NONE: 600PX) */}
-          <div className="lg:col-span-6 relative flex justify-center items-end w-full h-[280px] sm:h-[400px] md:h-[480px] lg:h-[600px] pt-0 mt-0 order-2 lg:order-none">
-            
-            {/* 1. BACKGROUND GEOMETRY (SVG VÒM NAVY MỞ RỘNG XUỐNG CHÂN CĂN CHÍNH GIỮA) */}
-            <div className="absolute inset-0 z-0 flex items-end justify-center pointer-events-none overflow-hidden">
-              <svg
-                className="w-full h-full"
-                viewBox="0 0 500 600"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  {/* Navy Color Gradient Definition */}
-                  <linearGradient id="heroNavyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#073B78" />
-                    <stop offset="60%" stopColor="#052954" />
-                    <stop offset="100%" stopColor="#02162E" />
-                  </linearGradient>
-
-                  {/* Gold Color Gradient Definition */}
-                  <linearGradient id="heroGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#E5BE6B" />
-                    <stop offset="50%" stopColor="#D8A84E" />
-                    <stop offset="100%" stopColor="#B38431" />
-                  </linearGradient>
-                </defs>
-
-                {/* Main Navy Solid Backdrop Shape */}
-                <path
-                  d="M 80 0 C -20 180 -20 420 60 600 L 500 600 L 500 0 Z"
-                  fill="url(#heroNavyGrad)"
-                />
-
-                {/* Primary Gold Accent Curve */}
-                <path
-                  d="M 80 0 C -20 180 -20 420 60 600"
-                  stroke="url(#heroGoldGrad)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-
-                {/* Secondary Parallel Gold Accent Stroke */}
-                <path
-                  d="M 92 0 C -8 180 -8 420 72 600"
-                  stroke="url(#heroGoldGrad)"
-                  strokeWidth="1.5"
-                  strokeOpacity="0.4"
-                  fill="none"
-                />
-              </svg>
-            </div>
-
-            {/* 2. PORTRAIT LAYER (NEXT/IMAGE PRIORITY LCP OPTIMIZATION) */}
-            <div className="relative z-10 w-full h-full flex items-end justify-center pt-2 pb-0">
+          {/* CỘT TRÁI: CHÂN DỤNG LUẬT SƯ ĐỨNG (PER SCREENSHOT) */}
+          <div className="lg:col-span-5 relative flex justify-center items-end min-h-[380px] sm:min-h-[460px] lg:min-h-[520px]">
+            <div className="relative z-10 w-full h-full flex items-end justify-center">
               <Image
                 src={imageUrl}
-                alt={`Chân dung ${name}`}
+                alt="Luật sư Lê Thị Ngọc Lợi"
                 width={500}
-                height={600}
+                height={620}
                 priority={true}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 500px"
-                className="max-h-[92%] sm:max-h-[95%] w-auto max-w-full object-contain object-bottom drop-shadow-xl hover:scale-[1.01] transition-transform duration-500"
+                className="max-h-[480px] lg:max-h-[540px] w-auto object-contain object-bottom drop-shadow-2xl"
               />
+            </div>
+          </div>
+
+          {/* CỘT PHẢI: TIÊU ĐỀ LỚN, 4 CAM KẾT & NÚT BẤM (PER SCREENSHOT) */}
+          <div className="lg:col-span-7 flex flex-col text-center lg:text-left items-center lg:items-start z-10 space-y-6">
+            
+            {/* Main Headline */}
+            <div className="space-y-2">
+              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gold tracking-tight uppercase leading-tight">
+                {title1}
+              </h2>
+              <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight uppercase leading-tight">
+                {title2}
+              </h1>
+            </div>
+
+            {/* Subtitle Description */}
+            <p className="text-slate-300 text-sm sm:text-base max-w-2xl font-light leading-relaxed">
+              {description}
+            </p>
+
+            {/* 4 Feature Badges (2x2 Grid per customer screenshot) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full pt-2">
+              {badges.map((badge, idx) => {
+                const IconComp = badge.icon;
+                return (
+                  <div key={idx} className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-1">
+                    <div className="w-10 h-10 rounded-lg bg-navy-light/60 border border-gold/40 flex items-center justify-center text-gold mb-1">
+                      <IconComp className="w-5 h-5 text-gold" />
+                    </div>
+                    <h3 className="font-bold text-xs sm:text-sm text-gold">{badge.title}</h3>
+                    <p className="text-[11px] text-slate-300 leading-tight">
+                      {badge.subtext}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 2 CTA Buttons */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-4 w-full">
+              <a
+                href="#lien-he"
+                className="inline-flex items-center justify-center gap-2 bg-gold hover:bg-gold-dark text-navy px-6 py-3 rounded-md font-sans text-xs sm:text-sm font-extrabold uppercase tracking-wide transition-all shadow-md hover:scale-105"
+              >
+                <span>{ctaPrimaryText}</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+
+              <a
+                href="#linh-vuc-hoat-dong"
+                className="inline-flex items-center justify-center gap-2 border border-slate-400/80 hover:border-gold hover:text-gold text-white px-6 py-3 rounded-md font-sans text-xs sm:text-sm font-extrabold uppercase tracking-wide transition-all bg-navy/40 hover:bg-navy/80"
+              >
+                <span>{ctaSecondaryText}</span>
+              </a>
             </div>
 
           </div>

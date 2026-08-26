@@ -1,19 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Scale, CheckCircle, Upload, Save, AlertCircle, Check } from "lucide-react";
+import { Scale, CheckCircle, Save, AlertCircle, Check } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminHeroPage() {
   const [draftSubtitle, setDraftSubtitle] = useState("Luật sư - Thạc sĩ");
   const [draftName, setDraftName] = useState("LÊ THỊ NGỌC LỢI");
-  const [draftImageUrl, setDraftImageUrl] = useState("/docs/design/customer-reference.png");
+  const [draftImageUrl, setDraftImageUrl] = useState("/customer-reference.png");
+  const [draftTitle1, setDraftTitle1] = useState("ĐỒNG HÀNH PHÁP LÝ");
+  const [draftTitle2, setDraftTitle2] = useState("BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP");
+  const [draftDescription, setDraftDescription] = useState("Luật sư Lê Thị Ngọc Lợi và cộng sự cam kết mang đến giải pháp pháp lý hiệu quả – tận tâm – bảo mật – chuyên nghiệp.");
+  const [draftCtaPrimaryText, setDraftCtaPrimaryText] = useState("TƯ VẤN NGAY");
+  const [draftCtaSecondaryText, setDraftCtaSecondaryText] = useState("XEM LĨNH VỰC HOẠT ĐỘNG");
 
   const [pubSubtitle, setPubSubtitle] = useState("Luật sư - Thạc sĩ");
   const [pubName, setPubName] = useState("LÊ THỊ NGỌC LỢI");
-  const [pubImageUrl, setPubImageUrl] = useState("/docs/design/customer-reference.png");
+  const [pubImageUrl, setPubImageUrl] = useState("/customer-reference.png");
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -25,10 +30,16 @@ export default function AdminHeroPage() {
         if (data.hero) {
           setDraftSubtitle(data.hero.draftSubtitle || "Luật sư - Thạc sĩ");
           setDraftName(data.hero.draftName || "LÊ THỊ NGỌC LỢI");
-          setDraftImageUrl(data.hero.draftImageUrl || "/docs/design/customer-reference.png");
+          setDraftImageUrl(data.hero.draftImageUrl || "/customer-reference.png");
+          setDraftTitle1(data.hero.draftTitle1 || "ĐỒNG HÀNH PHÁP LÝ");
+          setDraftTitle2(data.hero.draftTitle2 || "BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP");
+          setDraftDescription(data.hero.draftDescription || "Luật sư Lê Thị Ngọc Lợi và cộng sự cam kết mang đến giải pháp pháp lý hiệu quả – tận tâm – bảo mật – chuyên nghiệp.");
+          setDraftCtaPrimaryText(data.hero.draftCtaPrimaryText || "TƯ VẤN NGAY");
+          setDraftCtaSecondaryText(data.hero.draftCtaSecondaryText || "XEM LĨNH VỰC HOẠT ĐỘNG");
+
           setPubSubtitle(data.hero.pubSubtitle || "Luật sư - Thạc sĩ");
           setPubName(data.hero.pubName || "LÊ THỊ NGỌC LỢI");
-          setPubImageUrl(data.hero.pubImageUrl || "/docs/design/customer-reference.png");
+          setPubImageUrl(data.hero.pubImageUrl || "/customer-reference.png");
         }
       })
       .catch(() => setFeedback({ type: "error", message: "Không thể tải dữ liệu Chân dung Trang chủ." }))
@@ -48,13 +59,18 @@ export default function AdminHeroPage() {
           draftSubtitle,
           draftName,
           draftImageUrl,
+          draftTitle1,
+          draftTitle2,
+          draftDescription,
+          draftCtaPrimaryText,
+          draftCtaSecondaryText,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Không thể lưu nội dung bản nháp.");
 
-      setFeedback({ type: "success", message: "✓ Bản nháp Chân dung Trang chủ đã được lưu thành công." });
+      setFeedback({ type: "success", message: "✓ Bản nháp Banner Trang chủ đã được lưu thành công." });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi lưu bản nháp." });
     } finally {
@@ -75,7 +91,7 @@ export default function AdminHeroPage() {
       setPubSubtitle(draftSubtitle);
       setPubName(draftName);
       setPubImageUrl(draftImageUrl);
-      setFeedback({ type: "success", message: "✓ Đã xuất bản Chân dung Trang chủ ra Public thành công." });
+      setFeedback({ type: "success", message: "✓ Đã xuất bản Banner Trang chủ (Đồng Hành Pháp Lý) ra Public thành công." });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi xuất bản." });
     } finally {
@@ -84,18 +100,18 @@ export default function AdminHeroPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Đang tải dữ liệu Trang chủ...</div>;
+    return <div className="p-8 text-center text-slate-500">Đang tải dữ liệu Banner Trang chủ...</div>;
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl">
       
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-navy font-serif">Quản lý Ảnh & Chân dung Trang chủ</h1>
+          <h1 className="text-xl font-bold text-navy font-serif">Quản lý Nội dung Banner "Đồng Hành Pháp Lý" (Hero Section)</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý Danh xưng, Họ tên và Hình ảnh Chân dung Luật sư hiển thị trên trang chủ.
+            Quản lý Tiêu đề lớn, Mô tả, Thẻ tiêu chí, Nút bấm và Ảnh chân dung đứng hiển thị trên Banner Trang chủ.
           </p>
         </div>
 
@@ -126,51 +142,54 @@ export default function AdminHeroPage() {
         </div>
       )}
 
-      {/* Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Published Version Card */}
-        <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-emerald-800 tracking-wider">
-              Nội dung ĐANG XUẤT BẢN (Public)
-            </span>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-600 text-white rounded-full">
-              PUBLISHED
-            </span>
-          </div>
-
-          <div className="space-y-3">
+      {/* Main Form */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
+        <form onSubmit={handleSaveDraft} className="space-y-5">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="text-xs text-slate-500 font-medium">Danh xưng:</span>
-              <p className="font-serif text-slate-800 font-semibold">{pubSubtitle}</p>
-            </div>
-            <div>
-              <span className="text-xs text-slate-500 font-medium">Họ và tên:</span>
-              <p className="font-serif text-navy font-bold text-lg">{pubName}</p>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Tiêu đề 1 (Vàng / Nổi bật)
+              </label>
+              <input
+                type="text"
+                value={draftTitle1}
+                onChange={(e) => setDraftTitle1(e.target.value)}
+                placeholder="ĐỒNG HÀNH PHÁP LÝ"
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-amber-600 focus:ring-2 focus:ring-navy focus:outline-none"
+              />
             </div>
 
             <div>
-              <span className="text-xs text-slate-500 font-medium">Ảnh Chân dung Public:</span>
-              <div className="mt-2 relative w-32 aspect-[3/4] rounded-lg overflow-hidden border border-emerald-300 bg-slate-200">
-                <Image src={pubImageUrl} alt="Chân dung Public" fill className="object-cover" />
-              </div>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Tiêu đề 2 (Trắng / Chính)
+              </label>
+              <input
+                type="text"
+                value={draftTitle2}
+                onChange={(e) => setDraftTitle2(e.target.value)}
+                placeholder="BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP"
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-extrabold text-navy focus:ring-2 focus:ring-navy focus:outline-none"
+              />
             </div>
           </div>
-        </div>
 
-        {/* Edit Draft Form Card */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-navy tracking-wider">
-              Chỉnh sửa BẢN NHÁP (Draft)
-            </span>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full">
-              DRAFT
-            </span>
+          <div>
+            <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+              Đoạn văn mô tả Banner
+            </label>
+            <textarea
+              value={draftDescription}
+              onChange={(e) => setDraftDescription(e.target.value)}
+              rows={3}
+              required
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm leading-relaxed text-slate-800 focus:ring-2 focus:ring-navy focus:outline-none"
+            />
           </div>
 
-          <form onSubmit={handleSaveDraft} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
                 Danh xưng / Subtitle
@@ -196,35 +215,62 @@ export default function AdminHeroPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-navy focus:ring-2 focus:ring-navy focus:outline-none"
               />
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                Đường dẫn Ảnh Chân dung (URL)
+                Tên nút bấm chính (Primary CTA)
               </label>
               <input
                 type="text"
-                value={draftImageUrl}
-                onChange={(e) => setDraftImageUrl(e.target.value)}
+                value={draftCtaPrimaryText}
+                onChange={(e) => setDraftCtaPrimaryText(e.target.value)}
                 required
-                placeholder="/docs/design/customer-reference.png"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy focus:outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-navy focus:ring-2 focus:ring-navy focus:outline-none"
               />
-              <div className="mt-2 relative w-32 aspect-[3/4] rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
-                <Image src={draftImageUrl} alt="Xem trước Bản nháp" fill className="object-cover" />
-              </div>
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Tên nút bấm phụ (Secondary CTA)
+              </label>
+              <input
+                type="text"
+                value={draftCtaSecondaryText}
+                onChange={(e) => setDraftCtaSecondaryText(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-navy focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+              Đường dẫn / Upload Ảnh Chân dung đứng (Hero Portrait Image)
+            </label>
+            <input
+              type="text"
+              value={draftImageUrl}
+              onChange={(e) => setDraftImageUrl(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-600 focus:ring-2 focus:ring-navy focus:outline-none"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">Ảnh chân dung đứng phục vụ Banner Trang chủ (Mặc định: /customer-reference.png).</p>
+          </div>
+
+          <div className="pt-4 flex justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="px-6 py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? "Đang lưu..." : "Lưu bản nháp (Save Draft)"}</span>
+              <span>{saving ? "Đang lưu..." : "Lưu Bản nháp (Save Draft)"}</span>
             </button>
-          </form>
-        </div>
+          </div>
 
+        </form>
       </div>
 
     </div>

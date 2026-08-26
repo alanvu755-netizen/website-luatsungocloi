@@ -24,6 +24,17 @@ describe("Production Acceptance Test Suite (E2E)", () => {
     const sysAdmin = await prisma.adminUser.findUnique({ where: { email: "sysadmin@luatsuloi.vn" } });
     expect(sysAdmin).not.toBeNull();
     sysAdminId = sysAdmin!.id;
+
+    // Restore Global AI ON & Delete test UserPermissions
+    await prisma.globalAIConfig.upsert({
+      where: { id: "global" },
+      update: { enabled: true },
+      create: { id: "global", enabled: true },
+    });
+
+    await prisma.userPermission.deleteMany({
+      where: { userId: siteAdminId },
+    });
   });
 
   // 1. Auth & Password Hash Verification
@@ -62,6 +73,8 @@ describe("Production Acceptance Test Suite (E2E)", () => {
 
   // 3. AI Security Pipeline E2E
   it("E2E #3: Full AI Gate Pipeline (Auth -> Scope -> Perm -> Addon -> Global -> Quota -> RateLimit -> Policy)", async () => {
+    await prisma.aIUsage.deleteMany({ where: { siteId } });
+
     const gateResult = await validateAIGenerationGate(
       siteAdminId,
       siteId,
@@ -97,6 +110,8 @@ describe("Production Acceptance Test Suite (E2E)", () => {
 
   // 5. AI Request Idempotency E2E
   it("E2E #5: AI Request Idempotency (Same requestId retry)", async () => {
+    await prisma.aIUsage.deleteMany({ where: { siteId } });
+
     const requestId = `req_idempotent_test_${Date.now()}`;
     const promptInput = "Tóm tắt tư vấn pháp luật đất đai";
 

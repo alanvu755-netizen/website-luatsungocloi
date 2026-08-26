@@ -17,6 +17,7 @@ export const getPublishedIntroduction = memoize(async (siteId: string) => {
   return {
     title: intro.pubTitle,
     content: intro.pubContent,
+    imageUrl: intro.pubImageUrl || "/NgocLoi-office.jpg",
   };
 });
 
@@ -25,6 +26,7 @@ export async function updateIntroductionDraft(
   data: {
     draftTitle: string;
     draftContent: string;
+    draftImageUrl?: string | null;
   }
 ) {
   return await prisma.introduction.update({
@@ -32,6 +34,7 @@ export async function updateIntroductionDraft(
     data: {
       draftTitle: data.draftTitle,
       draftContent: data.draftContent,
+      draftImageUrl: data.draftImageUrl || "/NgocLoi-office.jpg",
     },
   });
 }
@@ -46,6 +49,7 @@ export async function publishIntroduction(siteId: string, adminUserId: string) {
     data: {
       pubTitle: intro.draftTitle,
       pubContent: intro.draftContent,
+      pubImageUrl: intro.draftImageUrl || "/NgocLoi-office.jpg",
       status: "PUBLISHED",
     },
   });

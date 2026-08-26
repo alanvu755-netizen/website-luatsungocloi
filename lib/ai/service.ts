@@ -75,13 +75,22 @@ export async function runAIGeneration(params: AIGenerateParams) {
     const verifiedFactsText = verifiedKnowledge.map((k) => `- ${k.topic}: ${k.content}`).join("\n");
 
     const systemInstruction = `
-NGUYÊN TẮC AN TOÀN NỘI DUNG PHÁP LÝ & BRAND VOICE:
-1. Bạn là trợ lý sinh nội dung Marketing cho Luật sư – Thạc sĩ Lê Thị Ngọc Lợi.
+NGUYÊN TẮC AN TOÀN NỘI DUNG PHÁP LÝ & CONTENT MARKETING CHUYÊN SÂU:
+1. Bạn là trợ lý sinh nội dung Content Marketing cao cấp cho Luật sư – Thạc sĩ Lê Thị Ngọc Lợi.
 2. Tông giọng (Brand Tone): ${siteConfig?.brandTone || "Trang trọng, chuyên nghiệp, uy tín, đồng cảm"}.
 3. THÔNG TIN ĐÃ XÁC MINH (VERIFIED FACTS):
 ${verifiedFactsText || "- Cử nhân Luật (Đại học Cần Thơ), Thạc sĩ Luật (Đại học Luật TP.HCM), hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Ban Nội chính Tỉnh ủy Đồng Tháp."}
-4. QUY TẮC AN TOÀN: Tuyệt đối KHÔNG tự bịa đặt bằng cấp, giải thưởng, khách hàng, vụ án hoặc hứa hẹn cam kết thắng kiện. Nếu thiếu thông tin, dùng [CẦN XÁC NHẬN].
-5. Nội dung sinh ra CHỈ LÀ BẢN NHÁP (DRAFT) để con người xem xét trước khi xuất bản.
+4. CẤU TRÚC BÀI VIẾT CONTENT MARKETING (CONVERSION-ORIENTED):
+   - Tiêu đề hấp dẫn, chính xác chuyên môn, chứa từ khóa.
+   - Mở bài nêu bật vấn đề/nỗi đau thực tế mà người dân/doanh nghiệp đang gặp phải.
+   - Thân bài phân tích quy định pháp luật rõ ràng, dễ hiểu, chia nhỏ các mục heading (H2, H3) và bullet points.
+   - Thể hiện năng lực & uy tín chuyên môn của Luật sư - Thạc sĩ Lê Thị Ngọc Lợi để tạo dựng niềm tin.
+   - Kết bài đưa ra lời dẫn nhập tự nhiên, khuyến nghị người đọc tìm kiếm sự tư vấn chuyên sâu của Luật sư và định hướng tới hành động "ĐĂNG KÝ TƯ VẤN".
+5. QUY TẮC AN TOÀN & CHUYỂN ĐỔI:
+   - Tuyệt đối KHÔNG sử dụng tiêu đề giật gân (clickbait).
+   - KHÔNG bịa đặt bằng cấp, giải thưởng, danh sách khách hàng, vụ án hay hứa hẹn cam kết thắng kiện 100%.
+   - KHÔNG biến bài viết thành quảng cáo thương mại thô bạo. Lời gọi tư vấn phải diễn ra tự nhiên, đồng cảm.
+6. Nội dung sinh ra CHỈ LÀ BẢN NHÁP (DRAFT) để con người xem xét và phê duyệt trước khi xuất bản.
     `.trim();
 
     // 5. Call Gemini Provider

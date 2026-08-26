@@ -14,7 +14,7 @@ export async function GET(
 
   const article = await prisma.article.findUnique({
     where: { id: params.id, siteId: user.siteId },
-    include: { menu: true, submenu: true },
+    include: { menu: true, submenu: true, articlePracticeAreas: true },
   });
 
   if (!article) {

@@ -19,10 +19,12 @@ export default async function AdminIntroductionPage() {
 
     const draftTitle = formData.get("draftTitle") as string;
     const draftContent = formData.get("draftContent") as string;
+    const draftImageUrl = formData.get("draftImageUrl") as string;
 
     await updateIntroductionDraft(authUser.siteId, {
       draftTitle,
       draftContent,
+      draftImageUrl: draftImageUrl || "/NgocLoi-office.jpg",
     });
     redirect("/admin/introduction");
   }
@@ -115,6 +117,20 @@ export default async function AdminIntroductionPage() {
                 required
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-navy focus:outline-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Đường dẫn / Upload Ảnh Giới thiệu Văn phòng (Office Photo)
+              </label>
+              <input
+                type="text"
+                name="draftImageUrl"
+                defaultValue={intro?.draftImageUrl || "/NgocLoi-office.jpg"}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-navy focus:outline-none"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">Ảnh luật sư làm việc tại văn phòng phục vụ riêng cho trang Giới thiệu (Mặc định: /NgocLoi-office.jpg).</p>
             </div>
 
             <button

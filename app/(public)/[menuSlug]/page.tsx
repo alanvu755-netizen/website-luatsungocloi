@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { getPublicArticles } from "@/lib/services/article.service";
 import { getSiteBySlug, getPublicHeaderMenus } from "@/lib/services/site.service";
@@ -8,7 +9,43 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Calendar, ArrowRight, FileText } from "lucide-react";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
+export const dynamic = "force-static";
 export const revalidate = 60; // ISR 60s Edge Caching
+
+export async function generateStaticParams() {
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) return [];
+  const menus = await getPublicHeaderMenus(site.id);
+  return menus
+    .filter(
+      (m) =>
+        m.slug &&
+        m.slug !== "/" &&
+        m.slug !== "" &&
+        m.slug !== "trang-chu" &&
+        m.slug !== "gioi-thieu" &&
+        m.slug !== "lien-he"
+    )
+    .map((m) => ({ menuSlug: m.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { menuSlug: string };
+}): Promise<Metadata> {
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) return {};
+
+  const headerMenus = await getPublicHeaderMenus(site.id);
+  const menu = headerMenus.find((m) => m.slug === params.menuSlug);
+  if (!menu) return {};
+
+  return {
+    title: `${menu.title} | Luật sư Lê Thị Ngọc Lợi`,
+    description: `Tổng hợp các bài viết tư vấn pháp luật và tin tức chính thống thuộc chuyên mục ${menu.title} từ Luật sư - Thạc sĩ Lê Thị Ngọc Lợi.`,
+  };
+}
 
 export default async function PublicMenuListingPage({
   params,

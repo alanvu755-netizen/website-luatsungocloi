@@ -1,13 +1,50 @@
+import { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { getPublicArticleBySlug } from "@/lib/services/article.service";
+import { getSiteBySlug } from "@/lib/services/site.service";
+import { getRelatedArticles } from "@/lib/services/related-article.service";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Calendar, PhoneCall, ShieldCheck } from "lucide-react";
+import { ChevronRight, Calendar, PhoneCall, ShieldCheck, Tag, ArrowRight } from "lucide-react";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
+import ArticleEngagement from "@/components/public/ArticleEngagement";
 
 export const revalidate = 60; // ISR 60s Edge Caching
+
+export async function generateStaticParams() {
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) return [];
+  const articles = await prisma.article.findMany({
+    where: { siteId: site.id, status: "PUBLISHED" },
+    include: { menu: true, submenu: true },
+  });
+  return articles
+    .filter((a) => a.menu && a.submenu)
+    .map((a) => ({
+      menuSlug: a.menu.slug,
+      submenuSlug: a.submenu!.slug,
+      articleSlug: a.slug,
+    }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { menuSlug: string; submenuSlug: string; articleSlug: string };
+}): Promise<Metadata> {
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
+  if (!site) return {};
+
+  const article = await getPublicArticleBySlug(site.id, params.menuSlug, params.articleSlug, params.submenuSlug);
+  if (!article || article.status !== "PUBLISHED") return {};
+
+  return {
+    title: `${article.title} | Luật sư Lê Thị Ngọc Lợi`,
+    description: article.excerpt || article.content.slice(0, 155),
+  };
+}
 
 export default async function PublicSubmenuArticleDetailPage({
   params,
@@ -16,16 +53,26 @@ export default async function PublicSubmenuArticleDetailPage({
 }) {
   const { menuSlug, submenuSlug, articleSlug } = params;
 
-  const site = await prisma.site.findUnique({
-    where: { slug: "le-thi-ngoc-loi" },
-    include: { settings: true },
-  });
+  const site = await getSiteBySlug("le-thi-ngoc-loi");
   if (!site) notFound();
 
   const article = await getPublicArticleBySlug(site.id, menuSlug, articleSlug, submenuSlug);
-  if (!article) notFound();
+  if (!article || article.status !== "PUBLISHED") notFound();
 
-  const enabledChannels = await getEnabledContactChannels(site.id);
+  const [enabledChannels, articlePracticeAreas, relatedArticles] = await Promise.all([
+    getEnabledContactChannels(site.id),
+    prisma.articlePracticeArea.findMany({
+      where: { articleId: article.id },
+      include: { practiceArea: true },
+    }),
+    getRelatedArticles({
+      siteId: site.id,
+      currentArticleId: article.id,
+      submenuId: article.submenuId,
+      menuId: article.menuId,
+      limit: 3,
+    }),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -34,7 +81,7 @@ export default async function PublicSubmenuArticleDetailPage({
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow">
         
         {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mb-6">
+        <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 font-medium mb-6">
           <Link href="/" className="hover:text-navy transition-colors">
             Trang chủ
           </Link>
@@ -83,10 +130,38 @@ export default async function PublicSubmenuArticleDetailPage({
           )}
         </div>
 
+        {/* View Count & Share Action Tracking Component */}
+        <ArticleEngagement
+          articleId={article.id}
+          initialViewCount={article.viewCount || 0}
+          initialShareCount={article.shareCount || 0}
+          articleTitle={article.title}
+        />
+
         {/* Article Content Body */}
         <div className="py-8 prose max-w-none text-slate-800 text-base leading-relaxed whitespace-pre-line font-sans">
           {article.content}
         </div>
+
+        {/* Multi-Practice Area Tags (N-N Junction Display) */}
+        {articlePracticeAreas.length > 0 && (
+          <div className="pt-6 border-t border-slate-200 my-6">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 mb-3">
+              <Tag className="w-4 h-4 text-gold" />
+              <span>Lĩnh vực Pháp luật liên quan:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {articlePracticeAreas.map((apa) => (
+                <span
+                  key={apa.id}
+                  className="px-3 py-1 bg-slate-100 text-slate-700 font-medium text-xs rounded-lg border border-slate-200 hover:bg-navy/10 hover:text-navy transition-colors"
+                >
+                  {apa.practiceArea.title}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Consultation Call To Action Box */}
         <div className="my-10 p-6 sm:p-8 bg-gradient-to-r from-navy to-navy-dark text-white rounded-2xl shadow-lg border border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -108,6 +183,48 @@ export default async function PublicSubmenuArticleDetailPage({
             <span>Gọi ngay: {site.settings?.phone || "0902 081 061"}</span>
           </a>
         </div>
+
+        {/* Related Articles Widget */}
+        {relatedArticles.length > 0 && (
+          <div className="pt-10 border-t border-slate-200 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif font-bold text-xl text-slate-900">
+                Bài viết Liên quan
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedArticles.map((rel) => (
+                <div
+                  key={rel.id}
+                  className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between hover:shadow-xs transition-shadow"
+                >
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-navy bg-navy/10 px-2 py-0.5 rounded">
+                      {rel.menu?.title || "Pháp luật"}
+                    </span>
+                    <h4 className="font-serif font-bold text-sm text-slate-900 hover:text-navy line-clamp-2">
+                      <Link href={`/${menuSlug}/${submenuSlug}/${rel.slug}`}>
+                        {rel.title}
+                      </Link>
+                    </h4>
+                    <p className="text-xs text-slate-600 line-clamp-2">
+                      {rel.excerpt || "Đọc bài viết tư vấn pháp luật chi tiết từ Luật sư Lê Thị Ngọc Lợi..."}
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/${menuSlug}/${submenuSlug}/${rel.slug}`}
+                    className="pt-3 mt-3 border-t border-slate-200 text-xs font-bold text-navy hover:text-gold flex items-center gap-1 transition-colors"
+                  >
+                    <span>Xem chi tiết</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </main>
 

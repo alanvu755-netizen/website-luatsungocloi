@@ -18,13 +18,14 @@ export async function validateAIGenerationGate(
   // 1. Authentication & Active User check
   const user = await prisma.adminUser.findUnique({
     where: { id: userId, status: true },
+    include: { role: true },
   });
   if (!user) {
     return { allowed: false, errorCode: "UNAUTHENTICATED", errorMessage: "Người dùng không hợp lệ" };
   }
 
   // 2. Tenant Scope Validation
-  if (user.roleId !== "SYSADMIN" && user.siteId !== siteId) {
+  if (user.role?.name !== "SYSADMIN" && user.siteId !== siteId) {
     return { allowed: false, errorCode: "TENANT_SCOPE_MISMATCH", errorMessage: "Không có quyền truy cập website này" };
   }
 

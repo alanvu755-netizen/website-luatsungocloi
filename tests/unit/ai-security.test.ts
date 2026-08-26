@@ -1,9 +1,29 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { validateAIGenerationGate } from "../../lib/ai/security";
 import { runAIGeneration } from "../../lib/ai/service";
 import { prisma } from "../../lib/db/prisma";
 
 describe("AI Add-on Security, Global Kill Switch, Quota & Idempotency", () => {
+  beforeEach(async () => {
+    // Restore Global AI ON before each test
+    await prisma.globalAIConfig.upsert({
+      where: { id: "global" },
+      update: { enabled: true },
+      create: { id: "global", enabled: true },
+    });
+
+    const site = await prisma.site.findUnique({ where: { slug: "le-thi-ngoc-loi" } });
+    const addOn = await prisma.addOn.findUnique({ where: { code: "AI_CONTENT_ENGINE" } });
+    if (site && addOn) {
+      await prisma.siteAddOn.upsert({
+        where: { id: "site_addon_default" },
+        update: { siteId: site.id, addOnId: addOn.id, status: "ACTIVE" },
+        create: { id: "site_addon_default", siteId: site.id, addOnId: addOn.id, status: "ACTIVE" },
+      });
+      await prisma.aIUsage.deleteMany({ where: { siteId: site.id } });
+    }
+  });
+
   it("should DENY AI generation when Global AI Kill Switch is disabled", async () => {
     const siteAdmin = await prisma.adminUser.findUnique({
       where: { email: "luatsu.loi@gmail.com" },
@@ -45,6 +65,10 @@ describe("AI Add-on Security, Global Kill Switch, Quota & Idempotency", () => {
       siteAdmin.siteId,
       "gemini-1.5-flash"
     );
+
+    if (!gateResult.allowed) {
+      console.log("DEBUG GATE FAILED:", gateResult);
+    }
 
     expect(gateResult.allowed).toBe(true);
   });

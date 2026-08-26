@@ -33,6 +33,9 @@ model Site {
   menus            Menu[]
   submenus         Submenu[]
   articles         Article[]
+  articlePracticeAreas ArticlePracticeArea[]
+  consultationLeads ConsultationLead[]
+  statisticItems   StatisticItem[]
   siteAddOns       SiteAddOn[]
   aiSiteConfigs    AISiteConfig[]
   aiGenerations    AIGeneration[]
@@ -109,13 +112,26 @@ model Hero {
   draftSubtitle  String   @default("Luật sư - Thạc sĩ")
   draftName      String   @default("LÊ THỊ NGỌC LỢI")
   draftImageId   String?
-  draftImageUrl  String?  @default("/docs/design/customer-reference.png")
+  draftImageUrl  String?  @default("/customer-reference.png")
   draftLogoId    String?
+
+  draftTitle1    String?  @default("ĐỒNG HÀNH PHÁP LÝ")
+  pubTitle1      String?  @default("ĐỒNG HÀNH PHÁP LÝ")
+  draftTitle2    String?  @default("BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP")
+  pubTitle2      String?  @default("BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP")
+  draftDescription String? @default("Luật sư Lê Thị Ngọc Lợi và cộng sự cam kết mang đến giải pháp pháp lý hiệu quả – tận tâm – bảo mật – chuyên nghiệp.")
+  pubDescription   String? @default("Luật sư Lê Thị Ngọc Lợi và cộng sự cam kết mang đến giải pháp pháp lý hiệu quả – tận tâm – bảo mật – chuyên nghiệp.")
+  draftBadgesJson  String?
+  pubBadgesJson    String?
+  draftCtaPrimaryText String? @default("TƯ VẤN NGAY")
+  pubCtaPrimaryText   String? @default("TƯ VẤN NGAY")
+  draftCtaSecondaryText String? @default("XEM LĨNH VỰC HOẠT ĐỘNG")
+  pubCtaSecondaryText   String? @default("XEM LĨNH VỰC HOẠT ĐỘNG")
   
   pubSubtitle    String   @default("Luật sư - Thạc sĩ")
   pubName        String   @default("LÊ THỊ NGỌC LỢI")
   pubImageId     String?
-  pubImageUrl    String?  @default("/docs/design/customer-reference.png")
+  pubImageUrl    String?  @default("/customer-reference.png")
   pubLogoId      String?
   
   status         String   @default("PUBLISHED") // "DRAFT", "PUBLISHED", "HIDDEN"
@@ -129,8 +145,10 @@ model Introduction {
   site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   draftTitle   String   @default("GIỚI THIỆU")
   draftContent String
+  draftImageUrl String? @default("/NgocLoi-office.jpg")
   pubTitle     String   @default("GIỚI THIỆU")
   pubContent   String
+  pubImageUrl   String? @default("/NgocLoi-office.jpg")
   status       String   @default("PUBLISHED") // "DRAFT", "PUBLISHED", "HIDDEN"
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -188,6 +206,7 @@ model PracticeArea {
   icon         String?
   displayOrder Int      @default(0)
   status       String   @default("PUBLISHED") // "DRAFT", "PUBLISHED", "HIDDEN"
+  articlePracticeAreas ArticlePracticeArea[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -225,19 +244,21 @@ model ContactChannel {
 }
 
 model SiteSettings {
-  id                     String   @id @default(cuid())
-  siteId                 String   @unique
-  site                   Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  siteName               String   @default("Luật sư - Thạc sĩ Lê Thị Ngọc Lợi")
-  phone                  String   @default("0902 081 061")
-  email                  String?
-  address                String   @default("Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp")
-  googleMapsUrl          String?
-  floatingContactEnabled Boolean  @default(true)
-  seoTitle               String?
-  seoDescription         String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                             String   @id @default(cuid())
+  siteId                         String   @unique
+  site                           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteName                       String   @default("Luật sư - Thạc sĩ Lê Thị Ngọc Lợi")
+  phone                          String   @default("0902 081 061")
+  email                          String?
+  consultationNotificationEmail String?  @default("luatsungocloi@gmail.com")
+  address                        String   @default("Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp")
+  googleMapsUrl                  String?
+  floatingContactEnabled         Boolean  @default(true)
+  footerDisclaimer               String?  @default("© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.")
+  seoTitle                       String?
+  seoDescription                 String?
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
 }
 
 model Media {
@@ -296,32 +317,84 @@ model Submenu {
 // Articles & SEO Content CMS
 // ----------------------------------------------------
 model Article {
-  id              String    @id @default(cuid())
+  id              String                @id @default(cuid())
   siteId          String
-  site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site            Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
   menuId          String
-  menu            Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menu            Menu                  @relation(fields: [menuId], references: [id], onDelete: Cascade)
   submenuId       String?
-  submenu         Submenu?  @relation(fields: [submenuId], references: [id], onDelete: SetNull)
+  submenu         Submenu?              @relation(fields: [submenuId], references: [id], onDelete: SetNull)
   title           String
   slug            String
   excerpt         String?
   content         String
   thumbnailUrl    String?
-  status          String    @default("DRAFT") // "DRAFT" | "PUBLISHED" | "HIDDEN"
+  status          String                @default("DRAFT") // "DRAFT" | "PUBLISHED" | "HIDDEN"
   publishedAt     DateTime?
   seoTitle        String?
   metaDescription String?
   keywords        String?
+  viewCount       Int                   @default(0)
+  shareCount      Int                   @default(0)
   createdById     String
-  createdBy       AdminUser @relation(fields: [createdById], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdBy       AdminUser             @relation(fields: [createdById], references: [id])
+  articlePracticeAreas ArticlePracticeArea[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   @@unique([siteId, slug])
   @@index([siteId, status, publishedAt])
   @@index([siteId, menuId, status])
   @@index([siteId, submenuId, status])
+}
+
+// ----------------------------------------------------
+// PRD v2.1 Step 1 Additions: N-N Junction, Leads & Stats
+// ----------------------------------------------------
+model ArticlePracticeArea {
+  id             String       @id @default(cuid())
+  siteId         String
+  site           Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  articleId      String
+  article        Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  practiceAreaId String
+  practiceArea   PracticeArea @relation(fields: [practiceAreaId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([articleId, practiceAreaId])
+  @@index([siteId, practiceAreaId])
+  @@index([articleId])
+}
+
+model ConsultationLead {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fullName  String   // REQUIRED
+  phone     String   // REQUIRED
+  email     String?  // OPTIONAL
+  content   String   // REQUIRED
+  ipAddress String?
+  userAgent String?
+  status    String   @default("NEW") // "NEW", "CONTACTED", "ARCHIVED"
+  createdAt DateTime @default(now())
+
+  @@index([siteId, createdAt])
+}
+
+model StatisticItem {
+  id           String   @id @default(cuid())
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  value        String   // "800+", "500+", "10+", "100%"
+  label        String   // "Vụ việc thành công", "Khách hàng tin tưởng"...
+  subtext      String?
+  displayOrder Int      @default(0)
+  status       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([siteId, status, displayOrder])
 }
 
 // ----------------------------------------------------

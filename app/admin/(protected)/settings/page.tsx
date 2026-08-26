@@ -6,8 +6,10 @@ import { Settings, CheckCircle, Save, AlertCircle, Check } from "lucide-react";
 export default function AdminSettingsPage() {
   const [phone, setPhone] = useState("0902 081 061");
   const [email, setEmail] = useState("luatsuloi@gmail.com");
+  const [consultationNotificationEmail, setConsultationNotificationEmail] = useState("luatsungocloi@gmail.com");
   const [address, setAddress] = useState("Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp");
   const [floatingContactEnabled, setFloatingContactEnabled] = useState(true);
+  const [footerDisclaimer, setFooterDisclaimer] = useState("© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.");
 
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -19,8 +21,10 @@ export default function AdminSettingsPage() {
         if (data.settings) {
           setPhone(data.settings.phone || "0902 081 061");
           setEmail(data.settings.email || "luatsuloi@gmail.com");
+          setConsultationNotificationEmail(data.settings.consultationNotificationEmail || "luatsungocloi@gmail.com");
           setAddress(data.settings.address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp");
           setFloatingContactEnabled(data.settings.floatingContactEnabled ?? true);
+          setFooterDisclaimer(data.settings.footerDisclaimer || "© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.");
         }
       })
       .catch(() => console.error("Error fetching admin settings"));
@@ -38,8 +42,10 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           phone,
           email,
+          consultationNotificationEmail,
           address,
           floatingContactEnabled,
+          footerDisclaimer,
         }),
       });
 
@@ -102,13 +108,28 @@ export default function AdminSettingsPage() {
 
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-              Email Liên hệ
+              Email Công khai Liên hệ
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-navy focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase text-navy mb-1 flex items-center justify-between">
+              <span>Email Admin Nhận Thông báo Tư vấn (Notification Email)</span>
+              <span className="text-[10px] text-gold font-normal">Dùng cho Resend Email Notification</span>
+            </label>
+            <input
+              type="email"
+              value={consultationNotificationEmail}
+              onChange={(e) => setConsultationNotificationEmail(e.target.value)}
+              placeholder="e.g. luatsungocloi@gmail.com"
+              required
+              className="w-full px-3 py-2 border border-navy/30 rounded-lg text-sm font-semibold text-navy bg-navy/5 focus:ring-2 focus:ring-navy focus:outline-none"
             />
           </div>
 
@@ -123,6 +144,21 @@ export default function AdminSettingsPage() {
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-navy focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+              Văn bản Footer & Bản quyền (Footer Disclaimer Text)
+            </label>
+            <textarea
+              value={footerDisclaimer}
+              onChange={(e) => setFooterDisclaimer(e.target.value)}
+              rows={2}
+              required
+              placeholder="© 2026 Bản quyền thuộc về..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-navy focus:outline-none"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">Dòng chữ bản quyền hiển thị ở thanh chân trang (Footer) trên toàn bộ Website Public.</p>
           </div>
 
           <div className="pt-3 border-t border-slate-100">

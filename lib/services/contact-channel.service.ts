@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
-import { memoize } from "@/lib/utils/cache";
+import { memoize, cachedQuery } from "@/lib/utils/cache";
 
 export type Platform = "ZALO" | "TELEGRAM" | "FACEBOOK" | "LINKEDIN" | "YOUTUBE" | "WHATSAPP" | "PHONE" | "EMAIL" | "OTHER";
 
@@ -70,13 +70,18 @@ export async function getContactChannels(siteId: string) {
 }
 
 export const getEnabledContactChannels = memoize(async (siteId: string) => {
-  return await prisma.contactChannel.findMany({
-    where: {
-      siteId,
-      status: true, // ON status only
-    },
-    orderBy: { displayOrder: "asc" },
-  });
+  return await cachedQuery(
+    async () =>
+      prisma.contactChannel.findMany({
+        where: {
+          siteId,
+          status: true, // ON status only
+        },
+        orderBy: { displayOrder: "asc" },
+      }),
+    [`enabled_contact_channels_${siteId}`],
+    { revalidate: 60, tags: ["contact_channels"] }
+  )();
 });
 
 export async function updateContactChannel(

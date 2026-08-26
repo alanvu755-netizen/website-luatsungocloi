@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import {
   createMenu,
@@ -57,6 +57,21 @@ describe("Content CMS, Dynamic Menu & Hero Image Business Rules", () => {
         pubImageUrl: "/docs/design/customer-reference.png",
       },
     });
+  });
+
+  afterAll(async () => {
+    if (testSiteId) {
+      await prisma.articlePracticeArea.deleteMany({ where: { article: { siteId: testSiteId } } });
+      await prisma.article.deleteMany({ where: { siteId: testSiteId } });
+      await prisma.submenu.deleteMany({ where: { menu: { siteId: testSiteId } } });
+      await prisma.menu.deleteMany({ where: { siteId: testSiteId } });
+      await prisma.hero.deleteMany({ where: { siteId: testSiteId } });
+      if (sysAdminUserId) {
+        await prisma.auditLog.deleteMany({ where: { adminUserId: sysAdminUserId } });
+        await prisma.adminUser.deleteMany({ where: { id: sysAdminUserId } });
+      }
+      await prisma.site.deleteMany({ where: { id: testSiteId } });
+    }
   });
 
   it("should update and publish Homepage Hero image dynamically", async () => {

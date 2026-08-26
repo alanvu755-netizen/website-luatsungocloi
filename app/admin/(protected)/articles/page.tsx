@@ -109,6 +109,7 @@ export default async function AdminArticlesPage({
                 <th className="py-3 px-4">Tiêu đề bài viết</th>
                 <th className="py-3 px-4">Menu / Chuyên mục</th>
                 <th className="py-3 px-4">Trạng thái</th>
+                <th className="py-3 px-4">Lượt đọc / Chia sẻ</th>
                 <th className="py-3 px-4">Ngày tạo</th>
                 <th className="py-3 px-4 text-right">Thao tác</th>
               </tr>
@@ -116,7 +117,7 @@ export default async function AdminArticlesPage({
             <tbody className="divide-y divide-slate-100">
               {articlesData.articles.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     Chưa có bài viết nào. Hãy bấm nút "Viết Bài mới" để khởi tạo bài viết đầu tiên.
                   </td>
                 </tr>
@@ -145,6 +146,13 @@ export default async function AdminArticlesPage({
                       >
                         {art.status}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs font-medium text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span title="Lượt đọc">👁️ {art.viewCount || 0}</span>
+                        <span className="text-slate-300">•</span>
+                        <span title="Lượt chia sẻ">🔗 {art.shareCount || 0}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-slate-500">
                       {new Date(art.createdAt).toLocaleDateString("vi-VN")}

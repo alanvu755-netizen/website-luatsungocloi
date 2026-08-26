@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
+import { memoize, cachedQuery } from "@/lib/utils/cache";
 
 export interface ArticleFilterOptions {
   menuId?: string;
@@ -49,99 +50,119 @@ export async function getArticles(siteId: string, options?: ArticleFilterOptions
   };
 }
 
-export async function getPublicArticles(
-  siteId: string,
-  options?: {
-    menuId?: string;
-    submenuId?: string;
-    menuSlug?: string;
-    submenuSlug?: string;
-    page?: number;
-    pageSize?: number;
-  }
-) {
-  const page = options?.page || 1;
-  const pageSize = options?.pageSize || 10;
-  const skip = (page - 1) * pageSize;
-
-  const where: any = {
-    siteId,
-    status: "PUBLISHED",
-  };
-
-  if (options?.submenuId) {
-    where.submenuId = options.submenuId;
-  } else if (options?.menuId) {
-    where.menuId = options.menuId;
-  } else {
-    if (options?.menuSlug) {
-      where.menu = { slug: options.menuSlug, status: "VISIBLE" };
+export const getPublicArticles = memoize(
+  async (
+    siteId: string,
+    options?: {
+      menuId?: string;
+      submenuId?: string;
+      menuSlug?: string;
+      submenuSlug?: string;
+      page?: number;
+      pageSize?: number;
     }
-    if (options?.submenuSlug) {
-      where.submenu = { slug: options.submenuSlug, status: "VISIBLE" };
-    }
-  }
+  ) => {
+    const key = `public_articles_${siteId}_${JSON.stringify(options || {})}`;
+    return await cachedQuery(
+      async () => {
+        const page = options?.page || 1;
+        const pageSize = options?.pageSize || 10;
+        const skip = (page - 1) * pageSize;
 
-  const [articles, totalCount] = await Promise.all([
-    prisma.article.findMany({
-      where,
-      select: {
-        id: true,
-        siteId: true,
-        menuId: true,
-        submenuId: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        content: true,
-        thumbnailUrl: true,
-        status: true,
-        publishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        menu: { select: { id: true, title: true, slug: true } },
-        submenu: { select: { id: true, title: true, slug: true } },
+        const where: any = {
+          siteId,
+          status: "PUBLISHED",
+        };
+
+        if (options?.submenuId) {
+          where.submenuId = options.submenuId;
+        } else if (options?.menuId) {
+          where.menuId = options.menuId;
+        } else {
+          if (options?.menuSlug) {
+            where.menu = { slug: options.menuSlug, status: "VISIBLE" };
+          }
+          if (options?.submenuSlug) {
+            where.submenu = { slug: options.submenuSlug, status: "VISIBLE" };
+          }
+        }
+
+        const [articles, totalCount] = await Promise.all([
+          prisma.article.findMany({
+            where,
+            select: {
+              id: true,
+              siteId: true,
+              menuId: true,
+              submenuId: true,
+              title: true,
+              slug: true,
+              excerpt: true,
+              content: true,
+              thumbnailUrl: true,
+              status: true,
+              publishedAt: true,
+              viewCount: true,
+              shareCount: true,
+              createdAt: true,
+              updatedAt: true,
+              menu: { select: { id: true, title: true, slug: true } },
+              submenu: { select: { id: true, title: true, slug: true } },
+            },
+            orderBy: { publishedAt: "desc" },
+            skip,
+            take: pageSize,
+          }),
+          prisma.article.count({ where }),
+        ]);
+
+        return {
+          articles,
+          totalCount,
+          totalPages: Math.ceil(totalCount / pageSize),
+          currentPage: page,
+        };
       },
-      orderBy: { publishedAt: "desc" },
-      skip,
-      take: pageSize,
-    }),
-    prisma.article.count({ where }),
-  ]);
-
-  return {
-    articles,
-    totalCount,
-    totalPages: Math.ceil(totalCount / pageSize),
-    currentPage: page,
-  };
-}
-
-export async function getPublicArticleBySlug(
-  siteId: string,
-  menuSlug: string,
-  articleSlug: string,
-  submenuSlug?: string
-) {
-  const where: any = {
-    siteId,
-    slug: articleSlug,
-    status: "PUBLISHED",
-    menu: { slug: menuSlug, status: "VISIBLE" },
-  };
-
-  if (submenuSlug) {
-    where.submenu = { slug: submenuSlug, status: "VISIBLE" };
+      [key],
+      { revalidate: 60, tags: ["public_articles"] }
+    )();
   }
+);
 
-  return await prisma.article.findFirst({
-    where,
-    include: {
-      menu: true,
-      submenu: true,
-    },
-  });
-}
+export const getPublicArticleBySlug = memoize(
+  async (
+    siteId: string,
+    menuSlug: string,
+    articleSlug: string,
+    submenuSlug?: string
+  ) => {
+    const key = `public_article_${siteId}_${menuSlug}_${submenuSlug || ""}_${articleSlug}`;
+    return await cachedQuery(
+      async () => {
+        const where: any = {
+          siteId,
+          slug: articleSlug,
+          status: "PUBLISHED",
+          menu: { slug: menuSlug, status: "VISIBLE" },
+        };
+
+        if (submenuSlug) {
+          where.submenu = { slug: submenuSlug, status: "VISIBLE" };
+        }
+
+        return await prisma.article.findFirst({
+          where,
+          include: {
+            menu: true,
+            submenu: true,
+          },
+        });
+      },
+      [key],
+      { revalidate: 60, tags: ["public_articles"] }
+    )();
+  }
+);
 
 export async function createArticle(
   siteId: string,
@@ -149,6 +170,7 @@ export async function createArticle(
   data: {
     menuId: string;
     submenuId?: string | null;
+    practiceAreaIds?: string[];
     title: string;
     slug: string;
     excerpt?: string | null;
@@ -181,6 +203,10 @@ export async function createArticle(
     },
   });
 
+  if (data.practiceAreaIds && Array.isArray(data.practiceAreaIds)) {
+    await associateArticlePracticeAreas(result.id, siteId, data.practiceAreaIds);
+  }
+
   try {
     revalidatePath("/");
     revalidatePath("/admin/articles");
@@ -196,6 +222,7 @@ export async function updateArticle(
   data: {
     menuId?: string;
     submenuId?: string | null;
+    practiceAreaIds?: string[];
     title?: string;
     slug?: string;
     excerpt?: string | null;
@@ -212,13 +239,19 @@ export async function updateArticle(
 
   const willBePublished = data.status === "PUBLISHED" && existing.status !== "PUBLISHED";
 
+  const { practiceAreaIds, ...articleFields } = data;
+
   const result = await prisma.article.update({
     where: { id, siteId },
     data: {
-      ...data,
+      ...articleFields,
       publishedAt: willBePublished ? new Date() : existing.publishedAt,
     },
   });
+
+  if (practiceAreaIds && Array.isArray(practiceAreaIds)) {
+    await associateArticlePracticeAreas(id, siteId, practiceAreaIds);
+  }
 
   try {
     revalidatePath("/");
@@ -260,3 +293,84 @@ export async function deleteArticle(id: string, siteId: string) {
   } catch (e) {}
   return result;
 }
+
+/**
+ * Associate an Article with multiple Practice Areas (N-N junction)
+ */
+export async function associateArticlePracticeAreas(
+  articleId: string,
+  siteId: string,
+  practiceAreaIds: string[]
+) {
+  // Delete existing associations first for full sync
+  await prisma.articlePracticeArea.deleteMany({
+    where: { articleId, siteId },
+  });
+
+  if (practiceAreaIds.length === 0) return [];
+
+  const dataToInsert = practiceAreaIds.map((practiceAreaId) => ({
+    siteId,
+    articleId,
+    practiceAreaId,
+  }));
+
+  await prisma.articlePracticeArea.createMany({
+    data: dataToInsert,
+    skipDuplicates: true,
+  });
+
+  return prisma.articlePracticeArea.findMany({
+    where: { articleId, siteId },
+    include: { practiceArea: true },
+  });
+}
+
+/**
+ * Fetch Articles by N-N Practice Area ID
+ */
+export async function getArticlesByPracticeArea(
+  siteId: string,
+  practiceAreaId: string,
+  options?: { page?: number; pageSize?: number }
+) {
+  const page = options?.page || 1;
+  const pageSize = options?.pageSize || 10;
+  const skip = (page - 1) * pageSize;
+
+  const where = {
+    siteId,
+    status: "PUBLISHED",
+    articlePracticeAreas: {
+      some: { practiceAreaId },
+    },
+  };
+
+  const [articles, totalCount] = await Promise.all([
+    prisma.article.findMany({
+      where,
+      select: {
+        id: true,
+        siteId: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        thumbnailUrl: true,
+        publishedAt: true,
+        createdAt: true,
+      },
+      orderBy: { publishedAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.article.count({ where }),
+  ]);
+
+  return {
+    articles,
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
+    currentPage: page,
+  };
+}
+

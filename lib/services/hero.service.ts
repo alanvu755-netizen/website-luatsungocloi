@@ -17,7 +17,13 @@ export const getPublishedHero = memoize(async (siteId: string) => {
   return {
     subtitle: hero.pubSubtitle,
     name: hero.pubName,
-    imageUrl: hero.pubImageUrl || "/docs/design/customer-reference.png",
+    imageUrl: hero.pubImageUrl || "/customer-reference.png",
+    title1: hero.pubTitle1 || "ĐỒNG HÀNH PHÁP LÝ",
+    title2: hero.pubTitle2 || "BẢO VỆ QUYỀN & LỢI ÍCH HỢP PHÁP",
+    description: hero.pubDescription,
+    badgesJson: hero.pubBadgesJson,
+    ctaPrimaryText: hero.pubCtaPrimaryText,
+    ctaSecondaryText: hero.pubCtaSecondaryText,
     imageId: hero.pubImageId,
     logoId: hero.pubLogoId,
   };
@@ -29,6 +35,12 @@ export async function updateHeroDraft(
     draftSubtitle: string;
     draftName: string;
     draftImageUrl?: string | null;
+    draftTitle1?: string | null;
+    draftTitle2?: string | null;
+    draftDescription?: string | null;
+    draftBadgesJson?: string | null;
+    draftCtaPrimaryText?: string | null;
+    draftCtaSecondaryText?: string | null;
     draftImageId?: string | null;
     draftLogoId?: string | null;
   }
@@ -39,6 +51,12 @@ export async function updateHeroDraft(
       draftSubtitle: data.draftSubtitle,
       draftName: data.draftName,
       draftImageUrl: data.draftImageUrl,
+      draftTitle1: data.draftTitle1,
+      draftTitle2: data.draftTitle2,
+      draftDescription: data.draftDescription,
+      draftBadgesJson: data.draftBadgesJson,
+      draftCtaPrimaryText: data.draftCtaPrimaryText,
+      draftCtaSecondaryText: data.draftCtaSecondaryText,
       draftImageId: data.draftImageId,
       draftLogoId: data.draftLogoId,
     },
@@ -56,6 +74,12 @@ export async function publishHero(siteId: string, adminUserId: string) {
       pubSubtitle: hero.draftSubtitle,
       pubName: hero.draftName,
       pubImageUrl: hero.draftImageUrl,
+      pubTitle1: hero.draftTitle1,
+      pubTitle2: hero.draftTitle2,
+      pubDescription: hero.draftDescription,
+      pubBadgesJson: hero.draftBadgesJson,
+      pubCtaPrimaryText: hero.draftCtaPrimaryText,
+      pubCtaSecondaryText: hero.draftCtaSecondaryText,
       pubImageId: hero.draftImageId,
       pubLogoId: hero.draftLogoId,
       status: "PUBLISHED",

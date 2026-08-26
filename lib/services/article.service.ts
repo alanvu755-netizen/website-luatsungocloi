@@ -139,27 +139,21 @@ export const getPublicArticleBySlug = memoize(
     const key = `public_article_${siteId}_${menuSlug}_${submenuSlug || ""}_${articleSlug}`;
     return await cachedQuery(
       async () => {
-        const where: any = {
-          siteId,
-          slug: articleSlug,
-          status: "PUBLISHED",
-          menu: { slug: menuSlug, status: "VISIBLE" },
-        };
-
-        if (submenuSlug) {
-          where.submenu = { slug: submenuSlug, status: "VISIBLE" };
-        }
-
         return await prisma.article.findFirst({
-          where,
+          where: {
+            siteId,
+            slug: articleSlug,
+            status: "PUBLISHED",
+          },
           include: {
-            menu: true,
-            submenu: true,
+            menu: { select: { id: true, title: true, slug: true } },
+            submenu: { select: { id: true, title: true, slug: true } },
+            createdBy: { select: { id: true, name: true } },
           },
         });
       },
       [key],
-      { revalidate: 60, tags: ["public_articles"] }
+      { revalidate: 0, tags: ["public_articles"] }
     )();
   }
 );

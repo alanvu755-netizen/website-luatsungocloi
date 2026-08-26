@@ -67,9 +67,9 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
               excerpt={article.excerpt}
               thumbnailUrl={article.thumbnailUrl}
               publishedAt={article.publishedAt}
-              categoryName={article.menu?.title || article.menu?.name || "Pháp luật"}
-              categorySlug={article.menu?.slug || "phap-luat"}
-              submenuSlug={article.submenu?.slug || "tin-tuc"}
+              categoryName={article.menu?.title || article.menu?.name || "Thư viện pháp luật"}
+              categorySlug={article.menu?.slug || "thu-vien-phap-luat"}
+              submenuSlug={article.submenu?.slug || "dat-dai"}
             />
           ))}
         </div>

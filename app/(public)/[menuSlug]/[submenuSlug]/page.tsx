@@ -8,8 +8,8 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Calendar, ArrowRight, PhoneCall, ShieldCheck } from "lucide-react";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 
-export const dynamic = "force-static";
-export const revalidate = 60; // ISR 60s Edge Caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   const site = await getSiteBySlug("le-thi-ngoc-loi");

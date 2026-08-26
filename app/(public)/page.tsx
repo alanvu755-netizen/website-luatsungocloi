@@ -11,7 +11,8 @@ import { prisma } from "@/lib/db/prisma";
 import { getPublicStatistics } from "@/lib/services/statistic.service";
 import { getPublicArticles } from "@/lib/services/article.service";
 
-export const revalidate = 60; // ISR 60s Edge Caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const DEFAULT_HERO = {
   subtitle: "Luật sư – Thạc sĩ",

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi | Tư vấn pháp lý chuyên nghiệp",
   description:

@@ -11,7 +11,8 @@ import { ChevronRight, Calendar, PhoneCall, ShieldCheck, Tag, ArrowRight } from 
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 import ArticleEngagement from "@/components/public/ArticleEngagement";
 
-export const revalidate = 60; // ISR 60s Edge Caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   const site = await getSiteBySlug("le-thi-ngoc-loi");

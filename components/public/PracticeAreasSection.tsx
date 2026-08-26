@@ -26,7 +26,7 @@ function getHrefForTitle(title: string): string {
     return "/thu-vien-phap-luat/doanh-nghiep";
   }
   if (upper.includes("HÌNH SỰ") || upper.includes("HÀNH CHÍNH")) {
-    return "/thu-vien-phap-luat/dat-dai";
+    return "/thu-vien-phap-luat/hinh-su-hanh-chinh";
   }
   return "/thu-vien-phap-luat/dat-dai";
 }

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { runAIGeneration } from "@/lib/ai/service";
 
 export async function POST(request: Request) {
   try {
     const user = await getAuthenticatedUser();
-    if (!user || !user.siteId) {
+    const targetSiteId = await getEffectiveSiteId(user);
+    if (!user || !targetSiteId) {
       return NextResponse.json(
         { message: "Bạn cần đăng nhập để thực hiện thao tác này" },
         { status: 401 }
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
 
     const result = await runAIGeneration({
       userId: user.id,
-      siteId: user.siteId,
+      siteId: targetSiteId,
       promptCode: promptCode || "ARTICLE_GENERATE",
       promptText,
       model: model || "gemini-1.5-flash",

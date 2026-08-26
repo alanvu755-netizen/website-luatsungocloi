@@ -2,6 +2,7 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveSiteId } from "@/lib/services/site.service";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   User,
   GraduationCap,
@@ -15,6 +16,8 @@ import {
 
 export default async function AdminDashboardPage() {
   const user = await getAuthenticatedUser();
+  if (!user) redirect("/admin/login");
+
   const siteId = await getEffectiveSiteId(user);
 
   if (!siteId) {
@@ -26,24 +29,32 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const [
-    hero,
-    educations,
-    experiences,
-    practiceAreas,
-    channels,
-    siteAddOn,
-  ] = await Promise.all([
-    prisma.hero.findUnique({ where: { siteId } }),
-    prisma.education.count({ where: { siteId } }),
-    prisma.experience.count({ where: { siteId } }),
-    prisma.practiceArea.count({ where: { siteId } }),
-    prisma.contactChannel.findMany({ where: { siteId } }),
-    prisma.siteAddOn.findFirst({
-      where: { siteId },
-      include: { addOn: true },
-    }),
-  ]);
+  let hero = null;
+  let educations = 0;
+  let experiences = 0;
+  let practiceAreas = 0;
+  let channels: any[] = [];
+  let siteAddOn = null;
+
+  try {
+    const res = await Promise.all([
+      prisma.hero.findUnique({ where: { siteId } }),
+      prisma.education.count({ where: { siteId } }),
+      prisma.experience.count({ where: { siteId } }),
+      prisma.practiceArea.count({ where: { siteId } }),
+      prisma.contactChannel.findMany({ where: { siteId } }),
+      prisma.siteAddOn.findFirst({
+        where: { siteId },
+        include: { addOn: true },
+      }),
+    ]);
+    hero = res[0];
+    educations = res[1];
+    experiences = res[2];
+    practiceAreas = res[3];
+    channels = res[4];
+    siteAddOn = res[5];
+  } catch (e) {}
 
   const activeChannelsCount = channels.filter((c) => c.status === true).length;
 

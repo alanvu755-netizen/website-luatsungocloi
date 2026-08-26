@@ -20,15 +20,22 @@ export default async function AdminArticlesPage({
   const search = searchParams?.search || "";
   const menuId = searchParams?.menuId || "";
 
-  const [articlesData, menus] = await Promise.all([
-    getArticles(siteId, {
-      page: currentPage,
-      pageSize: 10,
-      search,
-      menuId,
-    }),
-    getMenus(siteId),
-  ]);
+  let articlesData: any = { articles: [], totalCount: 0, totalPages: 1, currentPage: 1 };
+  let menus: any[] = [];
+
+  try {
+    const res = await Promise.all([
+      getArticles(siteId, {
+        page: currentPage,
+        pageSize: 10,
+        search,
+        menuId,
+      }),
+      getMenus(siteId),
+    ]);
+    articlesData = res[0] || articlesData;
+    menus = res[1] || [];
+  } catch (e) {}
 
   async function handleDelete(formData: FormData) {
     "use server";
@@ -124,7 +131,7 @@ export default async function AdminArticlesPage({
                   </td>
                 </tr>
               ) : (
-                articlesData.articles.map((art) => (
+                articlesData.articles.map((art: any) => (
                   <tr key={art.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-semibold text-slate-900 text-sm line-clamp-1">{art.title}</div>

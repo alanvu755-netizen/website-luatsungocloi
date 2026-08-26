@@ -31,7 +31,7 @@ export default async function ProtectedAdminLayout({
     redirect("/admin/login");
   }
 
-  const isSysAdmin = user.role.name === "SYSADMIN";
+  const isSysAdmin = user?.role?.name === "SYSADMIN" || user?.roleId === "SYSADMIN";
 
   const navGroups = [
     {

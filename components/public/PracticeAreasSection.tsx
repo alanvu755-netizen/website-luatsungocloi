@@ -24,21 +24,21 @@ const DEFAULT_CATEGORIES = [
     title: "HÔN NHÂN – GIA ĐÌNH",
     description: "Ly hôn, tranh chấp tài sản, quyền nuôi con, cấp dưỡng, kết hôn với người nước ngoài...",
     icon: Users,
-    href: "/thu-vien-phap-luat/hon-nhan",
+    href: "/thu-vien-phap-luat/hon-nhan-gia-dinh",
   },
   {
     id: "cat3",
     title: "DÂN SỰ – HỢP ĐỒNG",
     description: "Soạn thảo, rà soát hợp đồng, tranh chấp dân sự, bồi thường thiệt hại ngoài hợp đồng...",
     icon: FileText,
-    href: "/thu-vien-phap-luat/dan-su",
+    href: "/thu-vien-phap-luat/dan-su-hop-dong",
   },
   {
     id: "cat4",
     title: "TRANH TỤNG TẠI TÒA",
     description: "Đại diện theo ủy quyền, bảo vệ quyền lợi tại Tòa án các cấp...",
     icon: Scale,
-    href: "/thu-vien-phap-luat/dan-su",
+    href: "/thu-vien-phap-luat/tranh-tung",
   },
   {
     id: "cat5",
@@ -52,7 +52,7 @@ const DEFAULT_CATEGORIES = [
     title: "HÌNH SỰ – HÀNH CHÍNH",
     description: "Bào chữa, bảo vệ quyền lợi bị can, bị cáo, khiếu nại, tố cáo, xử phạt...",
     icon: Shield,
-    href: "/thu-vien-phap-luat/hinh-su",
+    href: "/thu-vien-phap-luat/dat-dai",
   },
 ];
 

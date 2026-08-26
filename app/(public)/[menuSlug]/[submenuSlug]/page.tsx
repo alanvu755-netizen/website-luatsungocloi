@@ -50,7 +50,7 @@ export default async function PublicSubmenuOrArticlePage({
 
   const currentMenu = headerMenus.find((m) => m.slug === menuSlug);
   const currentSubmenu = currentMenu?.submenus.find(
-    (s) => s.slug === submenuSlug || s.slug.includes(submenuSlug) || submenuSlug.includes(s.slug)
+    (s) => s.slug === submenuSlug
   );
 
   // CASE 1: Render Submenu Article Listing

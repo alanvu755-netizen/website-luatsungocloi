@@ -19,25 +19,48 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const mimeType = file.type || "image/png";
 
-    // Ensure uploads directory exists inside public/uploads
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
+    // On Vercel Serverless environment, filesystem is read-only.
+    // Use Base64 Data URL to guarantee 100% image upload success without ENOENT errors.
+    if (process.env.VERCEL) {
+      const base64Url = `data:${mimeType};base64,${buffer.toString("base64")}`;
+      return NextResponse.json({
+        success: true,
+        url: base64Url,
+        fileName: file.name,
+      });
+    }
 
-    // Clean filename & make unique
-    const sanitizedOriginalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const uniqueFilename = `${Date.now()}_${sanitizedOriginalName}`;
-    const filePath = path.join(uploadsDir, uniqueFilename);
+    try {
+      // Ensure uploads directory exists inside public/uploads for local development
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadsDir, { recursive: true });
 
-    await writeFile(filePath, buffer);
+      // Clean filename & make unique
+      const sanitizedOriginalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const uniqueFilename = `${Date.now()}_${sanitizedOriginalName}`;
+      const filePath = path.join(uploadsDir, uniqueFilename);
 
-    const publicUrl = `/uploads/${uniqueFilename}`;
+      await writeFile(filePath, buffer);
 
-    return NextResponse.json({
-      success: true,
-      url: publicUrl,
-      fileName: file.name,
-    });
+      const publicUrl = `/uploads/${uniqueFilename}`;
+
+      return NextResponse.json({
+        success: true,
+        url: publicUrl,
+        fileName: file.name,
+      });
+    } catch (fsError: any) {
+      // Fallback for Vercel/Serverless read-only filesystem
+      console.warn("Filesystem write unavailable, using Base64 Data URL fallback:", fsError.message);
+      const base64Url = `data:${mimeType};base64,${buffer.toString("base64")}`;
+      return NextResponse.json({
+        success: true,
+        url: base64Url,
+        fileName: file.name,
+      });
+    }
   } catch (error: any) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

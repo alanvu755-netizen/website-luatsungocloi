@@ -83,7 +83,18 @@ export async function runAIGeneration(params: AIGenerateParams) {
     }
   }
 
-  // 4. Create AIGeneration Record (Status: REQUESTED -> GENERATING)
+  // 4. Load AIProvider for Gemini API Key (if stored in DB)
+  let dbApiKey: string | undefined = undefined;
+  try {
+    const provider = await prisma.aIProvider.findUnique({
+      where: { code: "GEMINI" },
+    });
+    if (provider?.credentialRef && !provider.credentialRef.startsWith("env:")) {
+      dbApiKey = provider.credentialRef;
+    }
+  } catch (e) {}
+
+  // 5. Create AIGeneration Record (Status: REQUESTED -> GENERATING)
   const generation = await prisma.aIGeneration.create({
     data: {
       requestId: params.requestId,
@@ -96,11 +107,11 @@ export async function runAIGeneration(params: AIGenerateParams) {
   });
 
   try {
-    // 5. Build Dynamic Prompt System Instruction
+    // 6. Build Dynamic Prompt System Instruction
     const systemInstruction = buildDynamicPromptInstruction(objectiveConfig, params.isRegenerate);
     const userHighlightText = params.userHighlight || params.promptText || "";
 
-    // 6. Call Gemini Provider
+    // 7. Call Gemini Provider
     const result = await generateWithGemini({
       model,
       prompt: userHighlightText,
@@ -110,9 +121,10 @@ export async function runAIGeneration(params: AIGenerateParams) {
       objectiveConfig,
       isRegenerate: params.isRegenerate,
       systemInstruction,
+      apiKey: dbApiKey,
     });
 
-    // 7. Transaction to Update AIGeneration & AIUsage
+    // 8. Transaction to Update AIGeneration & AIUsage
     const [updatedGen] = await prisma.$transaction([
       prisma.aIGeneration.update({
         where: { id: generation.id },

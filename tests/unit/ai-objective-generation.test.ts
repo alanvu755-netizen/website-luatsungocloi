@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runAIGeneration } from "../../lib/ai/service";
 import { validateAIGenerationGate } from "../../lib/ai/security";
-import { buildDynamicPromptInstruction, generateObjectiveFallbackDraft, DynamicObjectiveConfig } from "../../lib/ai/provider";
+import { buildDynamicPromptInstruction, generateObjectiveFallbackDraft, sanitizeArticleDraft, DynamicObjectiveConfig } from "../../lib/ai/provider";
 import { prisma } from "../../lib/db/prisma";
 
 describe("ANTIGRAVITY — AI Objective & Differentiated Content Generation Suite (TC-AIOBJ-01 -> TC-AIGEN-09)", () => {
@@ -198,6 +198,29 @@ describe("ANTIGRAVITY — AI Objective & Differentiated Content Generation Suite
     expect(qnaPrompt).not.toEqual(riskPrompt);
   });
 
+  // TC-AIGEN-REAL-01: Output Contract — MUST BE REAL PUBLISHABLE ARTICLE (No outlines or meta-commentary)
+  it("TC-AIGEN-REAL-01: Output Contract verifies output is a real article without outlines or meta-labels", () => {
+    const highlight = "3 tình huống về tranh chấp đất đai bạn nên tìm kiếm sự hỗ trợ từ luật sư";
+    const draft = generateObjectiveFallbackDraft(highlight, "", {
+      code: "CLIENT_ATTRACTION",
+      name: "👤 Thu hút khách hàng tư vấn",
+      promptGuidance: "Value-first approach",
+    });
+
+    const sanitized = sanitizeArticleDraft(draft);
+
+    // MUST NOT contain outlines
+    expect(sanitized).not.toContain("1. MỞ BÀI & GÓC NHÌN CHỦ ĐỀ");
+    expect(sanitized).not.toContain("2. CÁC NỘI DUNG VÀ Ý CHÍNH CẦN KHÁM PHÁ");
+    expect(sanitized).not.toContain("[Biến thể Mới]");
+    expect(sanitized).not.toContain("Mục tiêu nội dung:");
+
+    // MUST contain real article content sections
+    expect(sanitized).toContain("Tranh chấp ranh giới, diện tích đất bị lấn chiếm hoặc chồng ranh Sổ đỏ");
+    expect(sanitized).toContain("Tranh chấp thừa kế quyền sử dụng đất");
+    expect(sanitized).toContain("0902 081 061");
+  });
+
   // TC-AIGEN-04: AI generation creates DRAFT only
   it("TC-AIGEN-04: AI generation output is strictly staged in DRAFT mode", async () => {
     if (!sysAdminUser || !defaultSiteId) return;
@@ -257,7 +280,7 @@ describe("ANTIGRAVITY — AI Objective & Differentiated Content Generation Suite
     expect(applySafeguard(true)).toBe(newDraft);
   });
 
-  // TC-AIGEN-08: AI failure does not corrupt Article data
+  // TC-AIGEN-08: AI service exception preserves original article state
   it("TC-AIGEN-08: AI service exception preserves original article state", () => {
     let originalArticleState = "Bài viết gốc trước khi gọi AI";
     try {

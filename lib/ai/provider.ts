@@ -26,7 +26,36 @@ export interface GeminiGenerateResult {
 }
 
 /**
- * Dynamic Prompt Assembly Engine: Assembles runtime system instruction for Gemini API
+ * Output Sanitizer: Cleans any residual AI meta-labels, prefixes, or commentary
+ * Ensures the output is strictly a publishable article draft.
+ */
+export function sanitizeArticleDraft(rawText: string): string {
+  if (!rawText) return "";
+
+  let cleaned = rawText
+    // Remove AI meta prefixes and tags
+    .replace(/^\[(Biến thể mới|AI Generated|Bản nháp AI|Draft)\]\s*/i, "")
+    .replace(/^(Mục tiêu nội dung|Content Objective|Strategy):\s*.*?\n/i, "")
+    .replace(/^👤\s*Thu hút khách hàng tư vấn:\s*/i, "")
+    .replace(/^🔎\s*Giải đáp vấn đề pháp lý:\s*/i, "")
+    .replace(/^⚠️\s*Cảnh báo rủi ro:\s*/i, "")
+    .replace(/^📚\s*Phổ biến kiến thức:\s*/i, "")
+    .replace(/^📰\s*Phân tích quy định mới:\s*/i, "")
+    .replace(/^💡\s*Hướng dẫn xử lý tình huống:\s*/i, "")
+    .replace(/^📣\s*Tăng tương tác & chia sẻ:\s*/i, "")
+    .replace(/^Tiêu đề bài viết đề xuất:\s*/i, "")
+    .replace(/^Tiêu đề đề xuất:\s*/i, "")
+    // Remove meta outline headers if AI inadvertently outputs them
+    .replace(/^1\.\s*MỞ BÀI\s*&\s*GÓC NHÌN CHỦ ĐỀ\s*\n/im, "")
+    .replace(/^2\.\s*CÁC NỘI DUNG VÀ Ý CHÍNH CẦN KHÁM PHÁ\s*\n/im, "")
+    .replace(/^3\.\s*LỜI KHUYÊN\s*&\s*GIẢI PHÁP.*?\n/im, "")
+    .trim();
+
+  return cleaned;
+}
+
+/**
+ * Dynamic Prompt Assembly Engine for Real Publishable Article Generation
  */
 export function buildDynamicPromptInstruction(
   objectiveConfig?: DynamicObjectiveConfig,
@@ -34,51 +63,58 @@ export function buildDynamicPromptInstruction(
 ): string {
   const brandVoice = `
 Bạn là Trợ lý AI Cố vấn & Sáng tạo Nội dung Cấp cao cho Luật sư – Thạc sĩ Lê Thị Ngọc Lợi (Hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Ban Nội chính Tỉnh ủy Đồng Tháp).
-PHONG CÁCH VĂN PHONG: Trang trọng, chuyên nghiệp, có chuyên môn pháp lý sâu sắc, điềm tĩnh, dễ hiểu, đáng tin cậy, thấu hiểu nỗi đau thực tế của khách hàng.
+PHONG CÁCH VĂN PHONG: Trang trọng, chuyên nghiệp, chuyên môn pháp lý sâu sắc, điềm tĩnh, dễ hiểu, đáng tin cậy, thấu hiểu nỗi đau thực tế của khách hàng.
 
 ============================================================
-YÊU CẦU NỘI DUNG CHUYÊN SÂU & GIÁ TRỊ THỰC TẾ (MANDATORY):
+QUY TẮC BẮT BỘC VỀ SẢN PHẨM ĐẦU RA (OUTPUT CONTRACT - REAL ARTICLE):
 ============================================================
-1. TẠO BÀI VIẾT HOÀN CHỈNH, DÀI VÀ CHUYÊN SÂU (800 - 1500 TỪ): Tuyệt đối KHÔNG viết tóm tắt ngắn hay lặp lại nguyên văn 1-2 câu prompt. Phải phân tích sâu sắc các tình huống thực tế, căn cứ pháp lý áp dụng, các rủi ro pháp lý và giải pháp từng bước.
-2. BẢO TOÀN SỰ THẬT 100%: Giữ nguyên tất cả dữ liệu sự thật (Facts, số liệu, tên người, tên cơ quan, địa danh, ngày tháng, điểm mấu chốt) do người dùng cung cấp trong phần USER HIGHLIGHT.
-3. ĐẦY ĐỦ CÁC MỤC CHUẨN CMS:
-   - Tiêu đề bài viết thu hút, chuyên nghiệp (H1)
-   - Phần Mở bài / Đặt vấn đề thực tế (Hook)
-   - Các phần nội dung phân tích chi tiết từng tình huống/luận điểm (Có H2, H3, gạch đầu dòng rõ ràng)
-   - Căn cứ pháp lý & Danh mục hồ sơ/chứng cứ cần chuẩn bị
-   - Đánh giá rủi ro & Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
-   - Đoạn Kêu gọi Hành động (CTA) tự nhiên, chân thành.
-4. ĐÁNH DẤU CẦN KIỂM TRA: Nếu đưa ra số điều luật hoặc mức phạt mà dữ liệu đầu vào chưa đủ xác minh, hãy thêm [CẦN KIỂM TRA] phía sau.
-5. KHÔNG CAM KẾT HỨA HẸN THẮNG KIỆN 100%.
+1. SẢN PHẨM ĐẦU RA PHẢI LÀ MỘT BÀI VIẾT THỰC TẾ (REAL PUBLISHABLE ARTICLE DRAFT):
+   - Bạn PHẢI tạo ra một bài viết hoàn chỉnh (gồm Tiêu đề H1, Mở bài Hook, Nội dung chính phân tích với các Tiêu đề phụ H2/H3, Căn cứ pháp lý/Tình huống, Lời khuyên chuyên môn và Đoạn Kêu gọi Hành động CTA).
+   - Dùng được TRỰC TIẾP trong CMS bài viết mà người dùng KHÔNG cần phải tự viết lại từ outline.
+
+2. TUYỆT ĐỐI KHÔNG TRẢ VỀ OUTLINE HOẶC META-COMMENTARY:
+   - KHÔNG xuất ra tiêu đề dạng outline như "1. Mở bài", "2. Các nội dung cần khám phá", "3. Lời khuyên".
+   - KHÔNG xuất ra câu tự giải thích kiểu "Dựa trên phân tích...", "AI đề xuất...", "Trong bài viết này tôi sẽ...".
+   - KHÔNG chứa các nhãn prefix như "[Biến thể mới]", "Mục tiêu nội dung: ...", "Content Strategy: ...".
+
+3. BẢO TOÀN DỮ LIỆU SỰ THẬT (FACT PRESERVATION 100%):
+   - Giữ nguyên tất cả dữ liệu sự thật (Facts, số liệu, tên người, tên cơ quan, địa danh, ngày tháng, điểm mấu chốt) do người dùng cung cấp trong phần USER HIGHLIGHT.
+
+4. AN TOÀN PHÁP LÝ & ĐÁNH DẤU CẦN KIỂM TRA:
+   - KHÔNG tự bịa đặt số điều luật, mức phạt hay án lệ không có cơ sở. Nếu đưa ra điều luật chưa đủ căn cứ xác minh, hãy thêm [CẦN KIỂM TRA] phía sau.
+   - KHÔNG cam kết hứa hẹn thắng kiện 100%.
+
+5. PHONG CÁCH CTA TỰ NHIÊN, KHÔNG QUẢNG CÁO THÔ BẠO:
+   - Xây dựng CTA chân thành, dựa trên nỗi đau thực tế của bài viết, khuyến khích rà soát hồ sơ pháp lý thận trọng.
 `;
 
   const objectiveName = objectiveConfig?.name || "🔎 Giải đáp vấn đề pháp lý";
-  const promptGuidance = objectiveConfig?.promptGuidance || `1. Trả lời trực diện vấn đề chính.\n2. Phân tích căn cứ pháp lý & tình huống thực tế.\n3. Định hướng xử lý & Lời khuyên chuyên môn.`;
-  const ctaGuidance = objectiveConfig?.ctaGuidance || "Liên hệ ngay Hotline Luật sư 0902 081 061 để được tư vấn & đồng hành thẩm định hồ sơ.";
+  const promptGuidance = objectiveConfig?.promptGuidance || `Triển khai bài viết phân tích sâu sắc, đi từ vấn đề thực tế -> căn cứ pháp lý -> các tình huống rủi ro -> hướng xử lý an toàn.`;
+  const ctaGuidance = objectiveConfig?.ctaGuidance || "Nếu bạn đang ở trong tình huống trên, việc rà soát hồ sơ pháp lý sớm sẽ giúp hạn chế tối đa rủi ro. Liên hệ Hotline Luật sư 0902 081 061.";
 
   const regenNote = isRegenerate
-    ? `\n\nYÊU CẦU BIẾN THỂ MỚI (REGENERATE VARIATION):\n- Tạo một bản viết mới hoàn toàn khác biệt về cách giật tiêu đề, Mở bài (Hook), các tiêu đề phụ (Subheadings) và góc nhìn phân tích so với bản trước, nhưng vẫn giữ nguyên dữ liệu cốt lõi.`
+    ? `\n\nYÊU CẦU REGENERATE (TẠO BIẾN THỂ MỚI):\n- Giữ nguyên các dữ liệu cốt lõi nhưng viết lại hoàn toàn Tiêu đề mới, Mở bài (Hook) mới và cấu trúc các góc nhìn phân tích mới khác biệt.`
     : "";
 
   return `${brandVoice}
 
 ============================================================
-MỤC TIÊU NỘI DUNG VÀ CHIẾN LƯỢC BÀI VIẾT:
+MỤC TIÊU NỘI DUNG VÀ CHIẾN LƯỢC BÀI VIẾT (STRATEGY):
 ============================================================
-MỤC TIÊU: ${objectiveName}
-${objectiveConfig?.description ? `MÔ TẢ: ${objectiveConfig.description}` : ""}
+MỤC TIÊU CHIẾN LƯỢC: ${objectiveName}
+${objectiveConfig?.description ? `ĐỊNH HƯỚNG: ${objectiveConfig.description}` : ""}
 
-HƯỚNG DẪN CẤU TRÚC VÀ PHƯƠNG PHÁP DIỄN ĐẠT:
+HƯỚNG DẪN TRIỂN KHAI NỘI DUNG:
 ${promptGuidance}
 
-CHIẾN LƯỢC CALL-TO-ACTION (CTA):
+ĐỊNH HƯỚNG KẾT BÀI VÀ CTA:
 ${ctaGuidance}
 ${regenNote}`;
 }
 
 /**
- * Intelligent Legal Content Generator Fallback Engine
- * Generates rich, highly detailed, value-packed legal articles even when AI Gateway API key is offline or in test mode.
+ * Intelligent Real Article Generator Fallback Engine
+ * Generates rich, complete, publication-ready legal articles for each Objective without any outline placeholders.
  */
 export function generateObjectiveFallbackDraft(
   userHighlight: string,
@@ -88,89 +124,129 @@ export function generateObjectiveFallbackDraft(
 ): string {
   const cleanInput = userHighlight.trim();
   const lowerInput = cleanInput.toLowerCase();
-
-  const isLandDispute = lowerInput.includes("đất") || lowerInput.includes("sổ đỏ") || lowerInput.includes("ranh giới") || lowerInput.includes("thừa kế đất");
-  const isDivorce = lowerInput.includes("ly hôn") || lowerInput.includes("kết hôn") || lowerInput.includes("hôn nhân") || lowerInput.includes("quyền nuôi con");
-
   const objectiveCode = objectiveConfig?.code || "CLIENT_ATTRACTION";
+
+  const isLandDispute = lowerInput.includes("đất") || lowerInput.includes("sổ đỏ") || lowerInput.includes("ranh giới") || lowerInput.includes("thừa kế đất") || lowerInput.includes("tranh chấp");
+  const isDivorce = lowerInput.includes("ly hôn") || lowerInput.includes("kết hôn") || lowerInput.includes("hôn nhân") || lowerInput.includes("quyền nuôi con");
+  const isNewReg = lowerInput.includes("quy định mới") || lowerInput.includes("luật mới") || lowerInput.includes("nghị định") || lowerInput.includes("thông tư") || objectiveCode === "NEW_REGULATION_ANALYSIS";
+  const isRisk = lowerInput.includes("rủi ro") || lowerInput.includes("cảnh báo") || lowerInput.includes("sai lầm") || objectiveCode === "RISK_WARNING";
+
   const objectiveName = objectiveConfig?.name || "Tư vấn Pháp luật Chuyên sâu";
   const cta = objectiveConfig?.ctaGuidance || "📞 Liên hệ ngay Hotline Luật sư – Thạc sĩ Lê Thị Ngọc Lợi: 0902 081 061 để được hỗ trợ thẩm định hồ sơ trực tiếp.";
-  const prefix = isRegenerate ? `[Biến thể Mới] ` : "";
 
-  // Dynamic High-Value Generator for Land Disputes
-  if (isLandDispute || lowerInput.includes("chanh chấp đất") || lowerInput.includes("tranh chấp đất")) {
-    return `${prefix}3 Tình Huống Tranh Chấp Đất Đai Phức Tạp Bạn Nên Tìm Kiếm Sự Hỗ Trợ Từ Luật Sư Ngay
+  // OBJECTIVE 1: CLIENT_ATTRACTION / THU HÚT KHÁCH HÀNG TƯ VẤN (Tập trung Nỗi đau thực tế -> Giải pháp -> CTA tự nhiên)
+  if (objectiveCode === "CLIENT_ATTRACTION" || (!isDivorce && !isNewReg && !isRisk)) {
+    if (isLandDispute) {
+      return `3 Tình Huống Tranh Chấp Đất Đai Phức Tạp Bạn Nên Tìm Kiếm Sự Hỗ Trợ Từ Luật Sư Ngay
 
-1. ĐẶT VẤN ĐỀ: RỦI RO PHÁP LÝ TRONG TRANH CHẤP ĐẤT ĐAI HIỆN NAY
 Tranh chấp đất đai luôn là một trong những dạng tranh chấp pháp lý kéo dài, phức tạp và gây thiệt hại tài chính lớn nhất cho các bên liên quan. Trên thực tế, đối với vấn đề "${cleanInput}", nhiều hộ gia đình và cá nhân vì tự mình thương lượng hoặc tự thực hiện thủ tục hòa giải không đúng quy định mà dẫn đến việc mất quyền khởi kiện, bị lấn chiếm đất vĩnh viễn hoặc bị bác đơn tại Tòa án.
 
 Dưới đây là 3 tình huống tranh chấp đất đai điển hình mà Quý khách hàng nhất định nên tìm kiếm sự tư vấn và đồng hành pháp lý từ Luật sư chuyên môn ngay từ giai đoạn đầu:
 
-2. CÁC TÌNH HUỐNG TRANH CHẤP ĐẤT ĐAI CẦN SỰ HỖ TRỢ CỦA LUẬT SƯ
+Tranh chấp ranh giới, diện tích đất bị lấn chiếm hoặc chồng ranh Sổ đỏ
+Đây là trường hợp rất phổ biến khi đo đạc lại đất để cấp đổi Giấy chứng nhận (Sổ đỏ) hoặc khi hàng xóm xây dựng công trình lấn sang ranh giới. Nếu không thu thập chứng cứ sơ đồ thửa đất qua các thời kỳ, mốc giới thực địa và trích đo địa chính kịp thời, bạn rất dễ bị mất phần diện tích đất bị lấn chiếm. Luật sư sẽ hỗ trợ thu thập hồ sơ địa chính lịch sử, trích đo hiện trạng, tham gia buổi hòa giải tại UBND cấp xã và xây dựng phương án bảo vệ mốc giới hợp pháp.
 
-• Tình huống 1: Tranh chấp ranh giới, diện tích đất bị lấn chiếm hoặc chồng ranh Sổ đỏ
-Đây là trường hợp rất phổ biến khi đo đạc lại đất để cấp đổi Giấy chứng nhận (Sổ đỏ) hoặc khi hàng xóm xây dựng công trình lấn sang ranh giới. 
-- Nguy cơ: Nếu không thu thập chứng cứ sơ đồ thửa đất qua các thời kỳ, mốc giới thực địa và trích đo địa chính kịp thời, bạn rất dễ bị mất phần diện tích đất bị lấn chiếm.
-- Vai trò Luật sư: Luật sư sẽ hỗ trợ thu thập hồ sơ địa chính lịch sử, trích đo hiện trạng, tham gia buổi hòa giải tại UBND cấp xã và xây dựng phương án bảo vệ mốc giới hợp pháp.
+Tranh chấp thừa kế quyền sử dụng đất giữa các thành viên gia đình
+Tranh chấp tài sản thừa kế là đất đai thường vướng mắc về di chúc không rõ ràng, di sản chưa sang tên qua nhiều thế hệ hoặc sự bất đồng giữa các hàng thừa kế. Vấn đề thời hiệu khởi kiện thừa kế (30 năm đối với bất động sản) và rủi ro hợp đồng tặng cho/chuyển nhượng bị vô hiệu đòi hỏi phải có sự hỗ trợ chuyên sâu. Luật sư đóng vai trò cầu nối hòa giải giữ gìn tình cảm gia đình, rà soát tính pháp lý của di chúc và đại diện tố tụng tại Tòa án khi không thể thương lượng.
 
-• Tình huống 2: Tranh chấp thừa kế quyền sử dụng đất giữa các thành viên gia đình
-Tranh chấp tài sản thừa kế là đất đai thường vướng mắc về di chúc không rõ ràng, di sản chưa sang tên qua nhiều thế hệ hoặc sự bất đồng giữa các hàng thừa kế.
-- Nguy cơ: Vấn đề thời hiệu khởi kiện thừa kế (30 năm đối với bất động sản) và rủi ro hợp đồng tặng cho/chuyển nhượng bị vô hiệu.
-- Vai trò Luật sư: Đóng vai trò cầu nối hòa giải giữ gìn tình cảm gia đình, rà soát tính pháp lý của di chúc và đại diện tố tụng tại Tòa án khi không thể thương lượng.
+Tranh chấp hợp đồng chuyển nhượng, đặt cọc mua bán đất (Đất viết tay / Chưa có Sổ đỏ)
+Giao dịch mua bán đất bằng giấy viết tay hoặc vi bằng khi giá đất biến động thường phát sinh tranh chấp bồi thường cọc hoặc yêu cầu hủy hợp đồng. Hợp đồng có nguy cơ bị Tòa án tuyên vô hiệu, bên mua đối mặt với nguy cơ không lấy lại được tiền cọc hoặc bên bán bị phong tỏa tài sản. Luật sư sẽ hỗ trợ đánh giá hiệu lực hợp đồng, chứng minh lỗi của bên vi phạm và yêu cầu bồi thường thiệt hại tối đa theo quy định pháp luật.
 
-• Tình huống 3: Tranh chấp hợp đồng chuyển nhượng, đặt cọc mua bán đất (Đất viết tay / Chưa có Sổ đỏ)
-Giao dịch mua bán đất bằng giấy viết tay hoặc vi bằng khi giá đất biến động thường phát sinh tranh chấp bồi thường cọc hoặc yêu cầu hủy hợp đồng.
-- Nguy cơ: Hợp đồng bị Tòa án tuyên vô hiệu, bên mua nguy cơ không lấy lại được tiền cọc hoặc bên bán bị phong tỏa tài sản.
-- Vai trò Luật sư: Đánh giá hiệu lực hợp đồng, chứng minh lỗi của bên vi phạm và yêu cầu bồi thường thiệt hại tối đa theo quy định pháp luật.
-
-3. DANH MỤC HỒ SƠ & CHỨNG CỨ CẦN CHUẨN BỊ
+Danh mục hồ sơ và chứng cứ cần chuẩn bị
 Để bảo vệ tối đa quyền lợi của mình, Quý khách hàng cần rà soát và chuẩn bị các giấy tờ cốt lõi:
 - Giấy chứng nhận quyền sử dụng đất (Sổ đỏ/Sổ hồng) hoặc giấy tờ về quyền sử dụng đất trước ngày 15/10/1993 [CẦN KIỂM TRA].
 - Trích đo địa chính, bản đồ thửa đất qua các thời kỳ.
 - Biên bản hòa giải không thành tại UBND cấp xã (Điều kiện bắt buộc trước khi khởi kiện tại Tòa án).
 - Các hợp đồng, biên nhận tiền cọc, tin nhắn/văn bản giao dịch giữa các bên.
 
-4. LỜI KHUYÊN VÀ GIẢI PHÁP TỪ LUẬT SƯ – THẠC SĨ LÊ THỊ NGỌC LỢI
+Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
 Với hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Tố tụng, Luật sư – Thạc sĩ Lê Thị Ngọc Lợi thấu hiểu sâu sắc rằng: "Mỗi mảnh đất là tài sản tích lũy cả đời của người dân". Việc tiếp cận giải pháp pháp lý đúng đắn ngay từ ban đầu sẽ giúp tiết kiệm thời gian, chi phí và tránh rủi ro thua kiện không đáng có.
 
 ${cta}`;
+    }
   }
 
-  // Dynamic High-Value Generator for Family / Marriage / Divorce
-  if (isDivorce) {
-    return `${prefix}Hướng Dẫn Pháp Lý Thủ Tục Ly Hôn & Giải Quyết Tranh Chấp Tài Sản, Quyền Nuôi Con
+  // OBJECTIVE 2: RISK_WARNING / CẢNH BÁO RỦI RO (Tập trung Sai lầm -> Hậu quả -> Phòng tránh)
+  if (objectiveCode === "RISK_WARNING" || isRisk) {
+    return `Những Rủi Ro Pháp Lý Nghiêm Trọng Cần Lưu Ý Khi Xử Lý: ${topic || cleanInput}
 
-1. TỔNG QUAN PHÁP LÝ VỀ HÔN NHÂN & GIA ĐÌNH
-Trong bối cảnh pháp luật hiện hành áp dụng chặt chẽ, chủ đề "${cleanInput}" đóng vai trò quan trọng để bảo vệ quyền nuôi con và phân chia tài sản chung an toàn.
+Trong quá trình thực hiện các giao dịch hoặc giải quyết vụ việc liên quan đến "${cleanInput}", không ít cá nhân và doanh nghiệp đã phải gánh chịu thiệt hại tài chính nặng nề chỉ vì thiếu thận trọng hoặc mắc phải những sai lầm pháp lý phổ biến.
 
-2. CÁC ĐIỂM TRỌNG TÂM CẦN LƯU Ý
-• Ly hôn thuận tình: Hai bên thống nhất toàn bộ về quan hệ hôn nhân, quyền nuôi con và phân chia tài sản. Thủ tục nhanh chóng tại Tòa án nhân dân có thẩm quyền.
-• Ly hôn đơn phương: Một bên yêu cầu ly hôn khi có căn cứ về bạo lực gia đình hoặc vi phạm nghiêm trọng quyền, nghĩa vụ vợ chồng.
-• Tranh chấp quyền nuôi con dưới 36 tháng tuổi và trên 7 tuổi: Ưu tiên người mẹ đối với con dưới 36 tháng tuổi; xem xét nguyện vọng của con từ đủ 7 tuổi trở lên.
+Những sai lầm pháp lý thường gặp
+- Tự thỏa thuận hoặc giao dịch bằng giấy tay không qua công chứng: Dẫn đến hợp đồng bị tuyên vô hiệu theo quy định Bộ luật Dân sự [CẦN KIỂM TRA].
+- Quá hạn thời hiệu khởi kiện hoặc không thu thập chứng cứ kịp thời: Làm mất quyền yêu cầu Tòa án bảo vệ quyền lợi hợp pháp.
+- Bỏ qua các bước hòa giải cơ sở bắt buộc: Dẫn đến đơn khởi kiện bị Tòa án trả lại, làm kéo dài thời gian xử lý.
 
-3. KHUYÊN NGHỊ TỪ LUẬT SƯ – THẠC SĨ LÊ THỊ NGỌC LỢI
-Luật sư sẽ hỗ trợ tư vấn phương án hòa giải gia đình, thu thập chứng cứ tài chính và đại diện bảo vệ quyền lợi tối đa cho mẹ và con tại Tòa án.
+Hậu quả và giải pháp phòng tránh an toàn
+Việc bị tuyên vô hiệu hợp đồng hoặc thua kiện không chỉ làm mất tài sản mà còn phát sinh chi phí tố tụng kéo dài. Để bảo vệ an toàn pháp lý, người dân và doanh nghiệp cần:
+1. Rà soát kỹ lưỡng tư cách pháp lý của các bên tham gia giao dịch.
+2. Thiết lập hợp đồng bằng văn bản có công chứng, chứng thực rõ ràng các điều khoản phạt vi phạm và bồi thường.
+3. Tham vấn ý kiến Luật sư chuyên môn trước khi ký kết hoặc nộp đơn khởi kiện.
+
+Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
+Kiểm tra tình trạng pháp lý và rà soát hồ sơ sớm là chìa khóa tốt nhất để phòng ngừa rủi ro.
 
 ${cta}`;
   }
 
-  // General Comprehensive Legal Draft Generator for any user highlight
+  // OBJECTIVE 3: NEW_REGULATION_ANALYSIS / PHÂN TÍCH QUY ĐỊNH MỚI
+  if (objectiveCode === "NEW_REGULATION_ANALYSIS" || isNewReg) {
+    return `Phân Tích Những Điểm Mới Quan Trọng Liên Quan Đến: ${topic || cleanInput}
+
+Việc cập nhật các quy định pháp luật mới ban hành liên quan đến "${cleanInput}" đóng vai trò trực tiếp đối với hoạt động đầu tư, giao dịch và quyền lợi của người dân cũng như doanh nghiệp.
+
+Những thay đổi trọng tâm cần lưu ý
+- Thay đổi về điều kiện và trình tự thủ tục hành chính: Siết chặt quy định về hồ sơ, giấy tờ chứng minh và thẩm quyền giải quyết.
+- So sánh trước và sau khi áp dụng quy định mới: Mở rộng quyền lợi cho các bên tuân thủ đúng pháp luật nhưng tăng mức xử phạt đối với các hành vi vi phạm [CẦN KIỂM TRA].
+- Đối tượng chịu tác động trực tiếp: Cá nhân, hộ gia đình và doanh nghiệp đang có các giao dịch hoặc tranh chấp chưa giải quyết dứt điểm.
+
+Hành động người đọc nên chuẩn bị
+1. Chủ động rà soát lại toàn bộ hợp đồng, hồ sơ pháp lý hiện có để điều chỉnh phù hợp với quy định mới.
+2. Thực hiện đầy đủ các bước đăng ký, kê khai theo đúng thời hạn luật định.
+3. Trao đổi với Luật sư chuyên môn để xây dựng phương án thích ứng an toàn.
+
+Đồng hành pháp lý cùng Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
+${cta}`;
+  }
+
+  // OBJECTIVE 4: SITUATION_GUIDE / HƯỚNG DẪN XỬ LÝ TÌNH HUỐNG (Step-by-Step Guide)
+  if (objectiveCode === "SITUATION_GUIDE") {
+    return `Hướng Dẫn Quy Trình Các Bước Xử Lý An Toàn Tình Huống: ${topic || cleanInput}
+
+Khi đối mặt với tình huống pháp lý phức tạp về "${cleanInput}", việc thực hiện đúng trình tự các bước theo quy định pháp luật sẽ giúp bạn bảo vệ tối đa quyền lợi và tiết kiệm thời gian.
+
+Quy trình 3 bước xử lý chuẩn pháp lý
+Bước 1: Thu thập và hệ thống hóa toàn bộ hồ sơ chứng cứ
+Tập hợp đầy đủ các giấy tờ chứng minh quyền sở hữu, hợp đồng giao dịch, biên nhận thanh toán, trích đo hiện trạng và các văn bản trao đổi giữa các bên.
+
+Bước 2: Thực hiện thủ tục thương lượng hoặc hòa giải cơ sở
+Đối với các tranh chấp có quy định bắt buộc phải hòa giải (như tranh chấp đất đai tại UBND xã), bạn cần gửi đơn yêu cầu hòa giải đúng thẩm quyền để lấy biên bản làm căn cứ pháp lý tiếp theo.
+
+Bước 3: Khởi kiện hoặc yêu cầu cơ quan có thẩm quyền giải quyết
+Trường hợp hòa giải không thành, chuẩn bị đơn khởi kiện kèm theo danh mục chứng cứ nộp Tòa án nhân dân có thẩm quyền.
+
+Những lỗi sai nghiêm trọng cần tuyệt đối tránh
+- Tự ý hủy bỏ mốc giới hoặc tự gây xung đột vũ lực.
+- Nộp đơn không đúng Tòa án có thẩm quyền dẫn đến bị trả lại đơn.
+
+Tư vấn chuyên sâu từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
+${cta}`;
+  }
+
+  // GENERAL HIGH-VALUE ARTICLE FALLBACK (For LEGAL_QNA, KNOWLEDGE_SHARING, ENGAGEMENT_BOOST)
   const titleTopic = topic || cleanInput || "Tư vấn Pháp luật Chuyên sâu";
-  return `${prefix}${objectiveName}: ${titleTopic}
+  return `Phân Tích Pháp Lý Chi Tiết Về: ${titleTopic}
 
-1. ĐẶT VẤN ĐỀ & NGỮ CẢNH PHÁP LÝ THỰC TẾ
-Trong bối cảnh hệ thống pháp luật Việt Nam liên tục cập nhật và siết chặt các quy định chuyên ngành, việc nắm bắt chính xác căn cứ pháp lý và trình tự thủ tục đóng vai trò quyết định đến quyền và lợi ích hợp pháp của cá nhân và doanh nghiệp.
+Trong thực tiễn áp dụng pháp luật Việt Nam hiện nay, chủ đề "${cleanInput}" là một trong những nội dung nhận được sự quan tâm rất lớn từ người dân và cộng đồng doanh nghiệp.
 
-Đối với thông tin / highlight: "${cleanInput}", người dân và doanh nghiệp cần lưu ý những khía cạnh pháp lý cốt lõi nhằm phòng ngừa thiệt hại phát sinh.
+Căn cứ pháp lý và phân tích chuyên sâu
+Theo quy định pháp luật chuyên ngành hiện hành, việc xác định đúng quyền và nghĩa vụ của các bên đòi hỏi phải rà soát kỹ lưỡng các điều kiện áp dụng và hồ sơ chứng cứ liên quan:
+- Căn cứ pháp lý áp dụng: Tuân thủ nghiêm ngặt quy định văn bản luật và hướng dẫn thi hành hiện hành [CẦN KIỂM TRA].
+- Các điều kiện và trường hợp ngoại lệ: Cần đánh giá tính hợp pháp của tài sản, năng lực hành vi của các bên và thời hiệu thực hiện quyền.
+- Thực tiễn giải quyết vụ việc: Việc chuẩn bị chứng cứ rõ ràng ngay từ đầu giúp rút ngắn đáng kể thời gian giải quyết tại cơ quan nhà nước.
 
-2. PHÂN TÍCH CHUYÊN SÂU & CÁC ĐIỂM TRỌNG TÂM CẦN LƯU Ý
-Dựa trên các quy định pháp luật hiện hành và thực tiễn giải quyết vụ việc, Quý khách hàng cần chú trọng các nội dung sau:
-• Xác định đúng căn cứ pháp lý và thẩm quyền cơ quan giải quyết chuyên trách.
-• Rà soát điều kiện áp dụng, các trường hợp ngoại lệ và danh mục chứng cứ hợp pháp.
-• Nhận diện sớm các rủi ro phát sinh trong quá trình giao dịch hoặc khi thương lượng với các bên liên quan.
-
-3. ĐỊNH HƯỚNG GIẢI PHÁP TỪ LUẬT SƯ – THẠC SĨ LÊ THỊ NGỌC LỢI
-Với hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Tố tụng, Luật sư – Thạc sĩ Lê Thị Ngọc Lợi cam kết mang đến giải pháp pháp lý tận tâm – chuyên nghiệp – bảo mật – hiệu quả.
+Lời khuyên giải pháp từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi
+With hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Tố tụng, Luật sư – Thạc sĩ Lê Thị Ngọc Lợi khuyên Quý khách hàng nên tiếp cận vấn đề một cách thận trọng, rà soát văn bản hợp đồng kỹ lưỡng trước khi đưa ra các quyết định pháp lý quan trọng.
 
 ${cta}`;
 }
@@ -193,21 +269,23 @@ ${options.userHighlight || options.prompt}
 ${options.topic ? `[CHỦ ĐỀ HOẶC TIÊU ĐỀ DỰ KIẾN]:\n${options.topic}` : ""}
 ${options.existingArticleContext ? `[NGỮ CẢNH BÀI VIẾT ĐANG CÓ]:\n${options.existingArticleContext}` : ""}
 
-YÊU CẦU: Hãy phân tích sâu sắc dữ liệu nguồn trên, áp dụng kiến thức pháp luật và viết thành một bài viết hoàn chỉnh, có giá trị thực tế cao, đầy đủ tiêu đề, các phần phân tích chi tiết và lời khuyên pháp lý chuyên sâu.
+YÊU CẦU ĐẶC BIỆT: Bạn phải viết thành một BÀI VIẾT HOÀN CHỈNH THỰC TẾ (REAL PUBLISHABLE ARTICLE DRAFT). KHÔNG xuất ra outline, KHÔNG ghi nhãn prefix như "[Biến thể mới]" hay "Mục tiêu:", KHÔNG ghi "1. Mở bài...", KHÔNG ghi meta-commentary.
 `.trim();
 
   // Fallback mode if API key is unconfigured or placeholder
   if (!apiKey || apiKey.trim() === "" || apiKey.includes("••••")) {
     console.warn("⚠️ GEMINI_API_KEY not set. Using Dynamic Objective High-Value Generator Engine.");
 
-    await new Promise((res) => setTimeout(res, 600));
+    await new Promise((res) => setTimeout(res, 500));
 
-    const content = generateObjectiveFallbackDraft(
+    const rawContent = generateObjectiveFallbackDraft(
       options.userHighlight || options.prompt,
       options.topic,
       options.objectiveConfig,
       options.isRegenerate
     );
+
+    const content = sanitizeArticleDraft(rawContent);
 
     return {
       content,
@@ -235,13 +313,14 @@ YÊU CẦU: Hãy phân tích sâu sắc dữ liệu nguồn trên, áp dụng ki
 
     if (!response.ok) {
       console.warn(`Gemini API returned status ${response.status}. Using High-Value Fallback generator.`);
+      const rawContent = generateObjectiveFallbackDraft(
+        options.userHighlight || options.prompt,
+        options.topic,
+        options.objectiveConfig,
+        options.isRegenerate
+      );
       return {
-        content: generateObjectiveFallbackDraft(
-          options.userHighlight || options.prompt,
-          options.topic,
-          options.objectiveConfig,
-          options.isRegenerate
-        ),
+        content: sanitizeArticleDraft(rawContent),
         inputTokens: 150,
         outputTokens: 750,
         providerRequestId: requestId,
@@ -249,7 +328,7 @@ YÊU CẦU: Hãy phân tích sâu sắc dữ liệu nguồn trên, áp dụng ki
     }
 
     const data = await response.json();
-    const generatedText =
+    const rawGeneratedText =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       generateObjectiveFallbackDraft(
         options.userHighlight || options.prompt,
@@ -258,21 +337,24 @@ YÊU CẦU: Hãy phân tích sâu sắc dữ liệu nguồn trên, áp dụng ki
         options.isRegenerate
       );
 
+    const content = sanitizeArticleDraft(rawGeneratedText);
+
     return {
-      content: generatedText,
+      content,
       inputTokens: data.usageMetadata?.promptTokenCount || 150,
       outputTokens: data.usageMetadata?.candidatesTokenCount || 500,
       providerRequestId: requestId,
     };
   } catch (err) {
     console.error("Gemini API call failed, using High-Value Fallback engine:", err);
+    const rawContent = generateObjectiveFallbackDraft(
+      options.userHighlight || options.prompt,
+      options.topic,
+      options.objectiveConfig,
+      options.isRegenerate
+    );
     return {
-      content: generateObjectiveFallbackDraft(
-        options.userHighlight || options.prompt,
-        options.topic,
-        options.objectiveConfig,
-        options.isRegenerate
-      ),
+      content: sanitizeArticleDraft(rawContent),
       inputTokens: 150,
       outputTokens: 750,
       providerRequestId: requestId,

@@ -170,6 +170,8 @@ export default function CreateArticlePage() {
     let extractedTitle = "";
     if (lines.length > 0) {
       extractedTitle = lines[0]
+        .replace(/^#+\s*/, "")
+        .replace(/^\[.*?\]\s*/, "")
         .replace(/^tư vấn pháp luật:\s*/i, "")
         .replace(/^bài viết tư vấn pháp lý:\s*/i, "")
         .replace(/^giải đáp pháp luật:\s*/i, "")
@@ -178,19 +180,17 @@ export default function CreateArticlePage() {
         .replace(/^phân tích điểm mới pháp luật:\s*/i, "")
         .replace(/^hướng dẫn từng bước xử lý:\s*/i, "")
         .replace(/^giải pháp pháp lý chuyên sâu:\s*/i, "")
-        .replace(/^góc nhìn pháp lý:\s*/i, "")
-        .replace(/^\[biến thể mới\]\s*/i, "")
-        .replace(/^[-#*:]+\s*/, "")
+        .replace(/^tiêu đề:\s*/i, "")
+        .replace(/^[-*:]+\s*/, "")
         .trim();
     }
 
-    if (extractedTitle) {
-      if (extractedTitle === extractedTitle.toUpperCase() && extractedTitle.length > 5) {
-        extractedTitle = extractedTitle.charAt(0).toUpperCase() + extractedTitle.slice(1).toLowerCase();
-      }
+    if (aiTopicInput && aiTopicInput.trim() !== "") {
+      handleTitleChange(aiTopicInput.trim());
+    } else if (extractedTitle && extractedTitle.length > 5) {
       handleTitleChange(extractedTitle);
     } else if (!title) {
-      handleTitleChange(aiTopicInput || "Tư vấn Pháp luật: " + (aiUserHighlight.slice(0, 40) || "Bài viết mới"));
+      handleTitleChange("Tư vấn Pháp luật: " + (aiUserHighlight.slice(0, 40) || "Bài viết mới"));
     }
 
     setContent(aiDraft);

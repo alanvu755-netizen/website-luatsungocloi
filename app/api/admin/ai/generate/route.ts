@@ -2,17 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { runAIGeneration } from "@/lib/ai/service";
-import { ContentObjective } from "@/lib/ai/provider";
-
-const VALID_OBJECTIVES: ContentObjective[] = [
-  "LEGAL_QNA",
-  "RISK_WARNING",
-  "KNOWLEDGE_SHARING",
-  "NEW_REGULATION_ANALYSIS",
-  "SITUATION_GUIDE",
-  "CLIENT_ATTRACTION",
-  "ENGAGEMENT_BOOST",
-];
 
 export async function POST(request: Request) {
   try {
@@ -26,25 +15,38 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { promptCode, promptText, contentObjective, isRegenerate, model, requestId } = body;
+    const {
+      promptCode,
+      promptText,
+      userHighlight,
+      topic,
+      existingArticleContext,
+      objectiveId,
+      contentObjectiveCode,
+      isRegenerate,
+      model,
+      requestId,
+    } = body;
 
-    if (!promptText || !requestId) {
+    const highlightText = userHighlight || promptText;
+
+    if (!highlightText || highlightText.trim() === "") {
       return NextResponse.json(
-        { message: "Nội dung yêu cầu (promptText) và requestId là bắt buộc" },
+        { message: "Thông tin / Highlight (userHighlight) là bắt buộc để AI tập trung khai thác" },
         { status: 400 }
       );
     }
 
-    if (!contentObjective) {
+    if (!requestId) {
       return NextResponse.json(
-        { message: "Vui lòng chọn Mục tiêu bài viết trước khi tạo nội dung bằng AI" },
+        { message: "requestId là bắt buộc" },
         { status: 400 }
       );
     }
 
-    if (!VALID_OBJECTIVES.includes(contentObjective as ContentObjective)) {
+    if (!objectiveId && !contentObjectiveCode) {
       return NextResponse.json(
-        { message: "Mục tiêu bài viết không hợp lệ" },
+        { message: "Vui lòng chọn Mục tiêu nội dung (objectiveId) trước khi tạo bài viết bằng AI" },
         { status: 400 }
       );
     }
@@ -53,8 +55,12 @@ export async function POST(request: Request) {
       userId: user.id,
       siteId: targetSiteId,
       promptCode: promptCode || "ARTICLE_GENERATE",
-      promptText,
-      contentObjective: contentObjective as ContentObjective,
+      promptText: highlightText,
+      userHighlight: highlightText,
+      topic,
+      existingArticleContext,
+      objectiveId,
+      contentObjectiveCode,
       isRegenerate: Boolean(isRegenerate),
       model: model || "gemini-1.5-flash",
       requestId,

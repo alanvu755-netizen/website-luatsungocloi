@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Save, CheckCircle, RefreshCw, AlertCircle, Check, RotateCcw } from "lucide-react";
+import { Sparkles, Save, CheckCircle, RefreshCw, AlertCircle, Check, RotateCcw, X } from "lucide-react";
 import ArticleEditorToolbar from "@/components/admin/ArticleEditorToolbar";
-import { ContentObjective } from "@/lib/ai/provider";
 
 interface Submenu {
   id: string;
@@ -24,15 +23,13 @@ interface PracticeAreaOption {
   title: string;
 }
 
-const OBJECTIVE_OPTIONS: { value: ContentObjective; label: string; desc: string }[] = [
-  { value: "LEGAL_QNA", label: "🔎 Giải đáp vấn đề pháp lý", desc: "Ưu tiên trả lời trực tiếp, căn cứ pháp lý & ví dụ thực tế" },
-  { value: "RISK_WARNING", label: "⚠️ Cảnh báo rủi ro", desc: "Ưu tiên nêu nhận diện nguy cơ, hậu quả & cách phòng tránh" },
-  { value: "KNOWLEDGE_SHARING", label: "📚 Phổ biến kiến thức", desc: "Ưu tiên từ ngữ đơn giản, bình dân, giúp đọc giả dễ hiểu" },
-  { value: "NEW_REGULATION_ANALYSIS", label: "📰 Phân tích quy định mới", desc: "Ưu tiên tóm tắt điểm mới, so sánh Trước vs Sau khi áp dụng" },
-  { value: "SITUATION_GUIDE", label: "💡 Hướng dẫn xử lý tình huống", desc: "Ưu tiên hồ sơ cần chuẩn bị & checklist từng bước thực hiện" },
-  { value: "CLIENT_ATTRACTION", label: "👤 Thu hút khách hàng tư vấn", desc: "Ưu tiên giải pháp giá trị thực tế, nhận diện bài toán cần Luật sư" },
-  { value: "ENGAGEMENT_BOOST", label: "📣 Tăng tương tác & chia sẻ", desc: "Ưu tiên Hook hấp dẫn, tình huống dễ đồng cảm & góc nhìn thảo luận" },
-];
+interface DBContentObjective {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+}
 
 export default function CreateArticlePage() {
   const router = useRouter();
@@ -50,9 +47,13 @@ export default function CreateArticlePage() {
   const [seoTitle, setSeoTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
 
+  // Dynamic Objectives from Database
+  const [objectives, setObjectives] = useState<DBContentObjective[]>([]);
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string>("");
+
   // AI Assistant V2 States
-  const [contentObjective, setContentObjective] = useState<ContentObjective>("LEGAL_QNA");
-  const [aiHighlights, setAiHighlights] = useState("");
+  const [aiUserHighlight, setAiUserHighlight] = useState("");
+  const [aiTopicInput, setAiTopicInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -62,7 +63,7 @@ export default function CreateArticlePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch Menus for dropdown selection
+    // Fetch Menus
     fetch("/api/admin/menus")
       .then((res) => res.json())
       .then((data) => {
@@ -75,12 +76,23 @@ export default function CreateArticlePage() {
       })
       .catch(() => {});
 
-    // Fetch Practice Areas for N-N multi-selection
+    // Fetch Practice Areas
     fetch("/api/admin/practice-areas")
       .then((res) => res.json())
       .then((data) => {
         if (data.practiceAreas) {
           setPracticeAreas(data.practiceAreas);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch Dynamic Content Objectives from Database API
+    fetch("/api/admin/content-objectives")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.objectives && data.objectives.length > 0) {
+          setObjectives(data.objectives);
+          setSelectedObjectiveId(data.objectives[0].id);
         }
       })
       .catch(() => {});
@@ -108,7 +120,7 @@ export default function CreateArticlePage() {
 
   // AI Content Generator Engine V2
   const handleGenerateAI = async (isRegenerate = false) => {
-    if (!aiHighlights.trim()) return;
+    if (!aiUserHighlight.trim()) return;
     setAiLoading(true);
     setAiError(null);
 
@@ -120,8 +132,10 @@ export default function CreateArticlePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           promptCode: "ARTICLE_GENERATE",
-          promptText: aiHighlights,
-          contentObjective,
+          userHighlight: aiUserHighlight,
+          topic: aiTopicInput || title,
+          existingArticleContext: content ? content.slice(0, 500) : "",
+          objectiveId: selectedObjectiveId,
           isRegenerate,
           model: "gemini-1.5-flash",
           requestId,
@@ -176,7 +190,7 @@ export default function CreateArticlePage() {
       }
       handleTitleChange(extractedTitle);
     } else if (!title) {
-      handleTitleChange("Tư vấn Pháp luật: " + (aiHighlights.slice(0, 40) || "Bài viết mới"));
+      handleTitleChange(aiTopicInput || "Tư vấn Pháp luật: " + (aiUserHighlight.slice(0, 40) || "Bài viết mới"));
     }
 
     setContent(aiDraft);
@@ -187,7 +201,6 @@ export default function CreateArticlePage() {
     setTimeout(() => setAiUsed(false), 3000);
   };
 
-  // Submit Article (Save Draft or Publish)
   const handleSubmit = async (status: "DRAFT" | "PUBLISHED") => {
     if (!title || !content || !selectedMenuId) {
       setError("Vui lòng điền Tiêu đề, Nội dung bài viết và Chọn Menu.");
@@ -230,6 +243,7 @@ export default function CreateArticlePage() {
   };
 
   const activeMenu = menus.find((m) => m.id === selectedMenuId);
+  const activeObjDesc = objectives.find((o) => o.id === selectedObjectiveId)?.description;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -237,9 +251,9 @@ export default function CreateArticlePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-navy font-serif">Tạo Bài viết Mới (AI V2)</h1>
+          <h1 className="text-xl font-bold text-navy font-serif">Tạo Bài viết Mới</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Soạn thảo bài viết mới và sử dụng Trợ lý AI V2 định hướng theo Mục tiêu bài viết.
+            Soạn thảo bài viết mới và tích hợp Trợ lý AI Strategist V2.
           </p>
         </div>
 
@@ -271,12 +285,12 @@ export default function CreateArticlePage() {
         </div>
       )}
 
-      {/* AI Assistant V2 Banner Component */}
+      {/* AI Assistant V2 Dynamic Objective Banner */}
       <div className="bg-gradient-to-r from-navy via-slate-900 to-navy text-white rounded-xl p-5 shadow-md border border-navy-light/40 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-gold" />
-            Trợ lý AI Sinh Bài viết & SEO V2
+            Trợ lý AI Sáng tạo Nội dung Bài viết (Content Strategist)
           </h2>
           <span className="text-[10px] text-slate-300 uppercase font-semibold">
             AI KHÔNG tự động lưu hay xuất bản
@@ -285,53 +299,70 @@ export default function CreateArticlePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           
-          {/* Content Objective Selection */}
+          {/* A. Content Objective Selection */}
           <div className="md:col-span-4 space-y-1">
             <label className="block text-xs font-semibold text-gold uppercase">
-              Mục tiêu bài viết (Bắt buộc)
+              Mục tiêu nội dung (Database Load)
             </label>
             <select
-              value={contentObjective}
-              onChange={(e) => setContentObjective(e.target.value as ContentObjective)}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white bg-slate-900 focus:outline-none focus:ring-2 focus:ring-gold"
+              value={selectedObjectiveId}
+              onChange={(e) => setSelectedObjectiveId(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-900 border border-white/20 rounded-lg text-xs text-white focus:outline-none focus:ring-2 focus:ring-gold"
             >
-              {OBJECTIVE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                  {opt.label}
+              {objectives.map((obj) => (
+                <option key={obj.id} value={obj.id} className="bg-slate-900 text-white">
+                  {obj.name}
                 </option>
               ))}
             </select>
-            <p className="text-[11px] text-slate-300 italic">
-              {OBJECTIVE_OPTIONS.find((o) => o.value === contentObjective)?.desc}
-            </p>
+            {activeObjDesc && (
+              <p className="text-[11px] text-slate-300 italic line-clamp-2 mt-1">
+                {activeObjDesc}
+              </p>
+            )}
           </div>
 
-          {/* User Source Input */}
-          <div className="md:col-span-8 space-y-1">
-            <label className="block text-xs font-semibold text-gold uppercase">
-              Nội dung nguồn / Ý chính của bạn
-            </label>
-            <textarea
-              rows={3}
-              value={aiHighlights}
-              onChange={(e) => setAiHighlights(e.target.value)}
-              placeholder="Nhập ý chính của bài viết (Ví dụ: Quy định mới về thu hồi đất đai năm 2026, 3 lưu ý người dân cần nắm rõ, thủ tục bồi thường...)"
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold"
-            />
+          {/* B & C. User Highlights & Topic */}
+          <div className="md:col-span-8 space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-gold uppercase mb-1">
+                Thông tin / Highlight muốn AI khai thác <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={aiUserHighlight}
+                onChange={(e) => setAiUserHighlight(e.target.value)}
+                placeholder="Nhập thông tin bạn muốn AI tập trung khai thác:&#10;- Vấn đề pháp lý hoặc tình huống thực tế&#10;- Điểm mới của quy định hoặc câu hỏi thường gặp&#10;- Ý kiến chuyên môn và dữ kiện cần nhấn mạnh..."
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                Chủ đề hoặc tiêu đề dự kiến (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                value={aiTopicInput}
+                onChange={(e) => setAiTopicInput(e.target.value)}
+                placeholder="Để trống nếu muốn AI tự đề xuất tiêu đề theo Mục tiêu..."
+                className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold"
+              />
+            </div>
           </div>
 
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end gap-3 pt-1">
           <button
             onClick={() => handleGenerateAI(false)}
-            disabled={aiLoading || !aiHighlights.trim()}
+            disabled={aiLoading || !aiUserHighlight.trim()}
             className="px-5 py-2.5 bg-gold hover:bg-gold-dark text-navy font-bold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {aiLoading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-navy" />
-                Đang sinh bản nháp AI V2...
+                Đang phân tích & sinh bài viết...
               </>
             ) : (
               <>
@@ -348,11 +379,17 @@ export default function CreateArticlePage() {
           </div>
         )}
 
-        {/* AI Draft Review Result Box */}
+        {/* AI Draft Review Result Box (Preview Workflow) */}
         {aiDraft && (
           <div className="pt-3 border-t border-white/20 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gold uppercase">Kết quả Bản Nháp AI (DRAFT):</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gold uppercase">Kết quả Bản Nháp AI (DRAFT):</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40">
+                  DRAFT MODE
+                </span>
+              </div>
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleGenerateAI(true)}
@@ -361,20 +398,28 @@ export default function CreateArticlePage() {
                   title="Tạo phiên bản khác với cấu trúc & cách mở bài mới"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Tạo phiên bản khác (Regenerate)</span>
+                  <span>Tạo lại (Regenerate)</span>
+                </button>
+
+                <button
+                  onClick={() => setAiDraft(null)}
+                  className="px-2.5 py-1.5 bg-white/10 hover:bg-red-500/30 text-slate-300 hover:text-white text-xs font-semibold rounded-lg transition-all border border-white/20 flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Hủy</span>
                 </button>
 
                 <button
                   onClick={handleApplyAIDraft}
-                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
                 >
                   {aiUsed ? <Check className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                  <span>{aiUsed ? "Đã áp dụng vào form!" : "Dùng nội dung này"}</span>
+                  <span>{aiUsed ? "Đã đưa vào bài viết!" : "Đưa vào bài viết"}</span>
                 </button>
               </div>
             </div>
 
-            <div className="p-3 bg-white/5 border border-white/10 rounded-lg max-h-48 overflow-y-auto text-xs font-mono text-slate-200 whitespace-pre-wrap">
+            <div className="p-3 bg-white/5 border border-white/10 rounded-lg max-h-56 overflow-y-auto text-xs font-mono text-slate-200 whitespace-pre-wrap">
               {aiDraft}
             </div>
           </div>

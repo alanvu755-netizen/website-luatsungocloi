@@ -1,13 +1,17 @@
 import { prisma } from "@/lib/db/prisma";
 import { validateAIGenerationGate } from "./security";
-import { generateWithGemini, ContentObjective, buildObjectiveSystemInstruction } from "./provider";
+import { generateWithGemini, buildDynamicPromptInstruction, DynamicObjectiveConfig } from "./provider";
 
 export interface AIGenerateParams {
   userId: string;
   siteId: string;
   promptCode: string;
-  promptText: string;
-  contentObjective?: ContentObjective;
+  promptText?: string;
+  userHighlight?: string;
+  topic?: string;
+  existingArticleContext?: string;
+  objectiveId?: string;
+  contentObjectiveCode?: string;
   isRegenerate?: boolean;
   model?: string;
   requestId: string;
@@ -56,7 +60,30 @@ export async function runAIGeneration(params: AIGenerateParams) {
     };
   }
 
-  // 3. Create AIGeneration Record (Status: REQUESTED -> GENERATING)
+  // 3. Dynamic Database Objective Lookup
+  let objectiveConfig: DynamicObjectiveConfig | undefined = undefined;
+  if (params.objectiveId || params.contentObjectiveCode) {
+    const objective = await prisma.contentObjective.findFirst({
+      where: {
+        OR: [
+          ...(params.objectiveId ? [{ id: params.objectiveId }] : []),
+          ...(params.contentObjectiveCode ? [{ code: params.contentObjectiveCode }] : []),
+        ],
+        status: true,
+      },
+    });
+    if (objective) {
+      objectiveConfig = {
+        code: objective.code,
+        name: objective.name,
+        description: objective.description,
+        promptGuidance: objective.promptGuidance,
+        ctaGuidance: objective.ctaGuidance,
+      };
+    }
+  }
+
+  // 4. Create AIGeneration Record (Status: REQUESTED -> GENERATING)
   const generation = await prisma.aIGeneration.create({
     data: {
       requestId: params.requestId,
@@ -69,19 +96,23 @@ export async function runAIGeneration(params: AIGenerateParams) {
   });
 
   try {
-    // 4. Build System Instruction for Content Objective
-    const systemInstruction = buildObjectiveSystemInstruction(params.contentObjective, params.isRegenerate);
+    // 5. Build Dynamic Prompt System Instruction
+    const systemInstruction = buildDynamicPromptInstruction(objectiveConfig, params.isRegenerate);
+    const userHighlightText = params.userHighlight || params.promptText || "";
 
-    // 5. Call Gemini Provider
+    // 6. Call Gemini Provider
     const result = await generateWithGemini({
       model,
-      prompt: params.promptText,
-      contentObjective: params.contentObjective,
+      prompt: userHighlightText,
+      userHighlight: userHighlightText,
+      topic: params.topic,
+      existingArticleContext: params.existingArticleContext,
+      objectiveConfig,
       isRegenerate: params.isRegenerate,
       systemInstruction,
     });
 
-    // 6. Transaction to Update AIGeneration & AIUsage
+    // 7. Transaction to Update AIGeneration & AIUsage
     const [updatedGen] = await prisma.$transaction([
       prisma.aIGeneration.update({
         where: { id: generation.id },
@@ -90,7 +121,7 @@ export async function runAIGeneration(params: AIGenerateParams) {
           providerRequestId: result.providerRequestId,
           inputTokens: result.inputTokens,
           outputTokens: result.outputTokens,
-          estimatedCost: 0.001, // Estimated cost per request
+          estimatedCost: 0.001,
           resultDraft: result.content,
           completedAt: new Date(),
         },
@@ -120,7 +151,6 @@ export async function runAIGeneration(params: AIGenerateParams) {
       generation: updatedGen,
     };
   } catch (error: any) {
-    // Failure handling: Record FAILED status in AIGeneration lifecycle
     await prisma.aIGeneration.update({
       where: { id: generation.id },
       data: {

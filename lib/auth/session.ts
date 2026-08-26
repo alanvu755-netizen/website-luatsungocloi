@@ -1,6 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/db/prisma";
 import { memoize } from "@/lib/utils/cache";
 
 const SECRET_KEY = new TextEncoder().encode(
@@ -36,11 +35,11 @@ export async function createSession(userId: string, email: string, role: string,
 }
 
 export async function verifySession(): Promise<SessionPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return null;
+
     const { payload } = await jwtVerify(token, SECRET_KEY);
     return payload as unknown as SessionPayload;
   } catch (error) {
@@ -49,23 +48,30 @@ export async function verifySession(): Promise<SessionPayload | null> {
 }
 
 export async function destroySession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(COOKIE_NAME);
+  } catch (e) {}
 }
 
 export const getAuthenticatedUser = memoize(async () => {
-  const session = await verifySession();
-  if (!session) return null;
+  try {
+    const session = await verifySession();
+    if (!session) return null;
 
-  // Instant 0ms auth check directly from verified JWT payload (No DB query overhead on navigation)
-  return {
-    id: session.userId,
-    email: session.email,
-    name: session.email === "luatsu.loi@gmail.com" ? "Lê Thị Ngọc Lợi" : "Quản trị Hệ thống",
-    status: true,
-    roleId: session.role,
-    role: { id: session.role, name: session.role },
-    siteId: session.siteId,
-    site: session.siteId ? { id: session.siteId, name: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi" } : null,
-  };
+    const roleName = session.role || "SYSADMIN";
+
+    return {
+      id: session.userId || "sysadmin",
+      email: session.email || "sysadmin@luatsuloi.vn",
+      name: session.email === "luatsu.loi@gmail.com" ? "Lê Thị Ngọc Lợi" : "Quản trị Hệ thống",
+      status: true,
+      roleId: roleName,
+      role: { id: roleName, name: roleName },
+      siteId: session.siteId || null,
+      site: session.siteId ? { id: session.siteId, name: "Luật sư - Thạc sĩ Lê Thị Ngọc Lợi" } : null,
+    };
+  } catch (e) {
+    return null;
+  }
 });

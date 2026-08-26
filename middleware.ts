@@ -14,14 +14,14 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get("auth_session")?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/admin/login", request.url), 303);
     }
 
     try {
       await jwtVerify(token, SECRET_KEY);
       return NextResponse.next();
     } catch (err) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/admin/login", request.url), 303);
     }
   }
 

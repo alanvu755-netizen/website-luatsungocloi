@@ -1,64 +1,57 @@
-import { getAuthenticatedUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/db/prisma";
-import { redirect } from "next/navigation";
-import { Shield, Cpu, Key, CheckCircle, AlertTriangle } from "lucide-react";
+"use client";
 
-export default async function SYSADMINAIProviderPage({
-  searchParams,
-}: {
-  searchParams?: { success?: string; error?: string };
-}) {
-  const user = await getAuthenticatedUser();
+import { useState, useEffect } from "react";
+import { Cpu, Key, CheckCircle, AlertCircle, Save, Check } from "lucide-react";
 
-  // CRITICAL SECURITY ENFORCEMENT: SYSADMIN ONLY!
-  if (!user || user.role.name !== "SYSADMIN") {
-    redirect("/admin/dashboard");
-  }
+export default function SYSADMINAIProviderPage() {
+  const [name, setName] = useState("Google Gemini AI Engine");
+  const [defaultModel, setDefaultModel] = useState("gemini-1.5-flash");
+  const [apiKey, setApiKey] = useState("••••••••••••••••••••••••••••");
+  const [status, setStatus] = useState(true);
 
-  const provider = await prisma.aIProvider.findUnique({
-    where: { code: "GEMINI" },
-  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  async function handleUpdateProvider(formData: FormData) {
-    "use server";
-    const authUser = await getAuthenticatedUser();
-    if (!authUser || authUser.role.name !== "SYSADMIN") {
-      throw new Error("DENIED: SYSADMIN privilege required");
+  useEffect(() => {
+    fetch("/api/admin/ai-provider")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.provider) {
+          setName(data.provider.name || "Google Gemini AI Engine");
+          setDefaultModel(data.provider.defaultModel || "gemini-1.5-flash");
+          setStatus(data.provider.status ?? true);
+        }
+      })
+      .catch(() => setFeedback({ type: "error", message: "Không thể tải cấu hình AI Provider." }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+
+    try {
+      const res = await fetch("/api/admin/ai-provider", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, defaultModel, apiKey, status }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Lỗi cập nhật AI Provider.");
+
+      setFeedback({ type: "success", message: "✓ Cập nhật & Lưu cấu hình AI Provider thành công!" });
+    } catch (err: any) {
+      setFeedback({ type: "error", message: err.message || "Lỗi lưu cấu hình." });
+    } finally {
+      setSaving(false);
     }
+  };
 
-    const name = formData.get("name") as string;
-    const defaultModel = formData.get("defaultModel") as string;
-    const apiKey = formData.get("apiKey") as string;
-    const status = formData.get("status") === "true";
-
-    const dataToUpdate: any = {
-      name,
-      defaultModel,
-      status,
-    };
-
-    // If new API key provided, update credentialRef securely (never store plaintext)
-    if (apiKey && apiKey.trim() !== "" && !apiKey.includes("••••")) {
-      dataToUpdate.credentialRef = `env:GEMINI_API_KEY`;
-    }
-
-    await prisma.aIProvider.update({
-      where: { code: "GEMINI" },
-      data: dataToUpdate,
-    });
-
-    // Record AuditLog
-    await prisma.auditLog.create({
-      data: {
-        adminUserId: authUser.id,
-        action: "AI_PROVIDER_UPDATE",
-        entityType: "AIProvider",
-        entityId: provider?.id,
-        metadata: JSON.stringify({ code: "GEMINI", status }),
-      },
-    });
-
-    redirect("/admin/ai-provider?success=Cập nhật AI Provider thành công");
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500">Đang tải cấu hình AI Provider...</div>;
   }
 
   return (
@@ -79,10 +72,20 @@ export default async function SYSADMINAIProviderPage({
         </div>
       </div>
 
-      {searchParams?.success && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{searchParams.success}</span>
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-xs flex items-center gap-3 border ${
+            feedback.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}
+        >
+          {feedback.type === "success" ? (
+            <CheckCircle className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+          ) : (
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+          )}
+          <span>{feedback.message}</span>
         </div>
       )}
 
@@ -95,29 +98,29 @@ export default async function SYSADMINAIProviderPage({
               <Cpu className="w-6 h-6 stroke-[1.75]" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">{provider?.name}</h3>
-              <p className="text-xs text-slate-400 font-mono">Mã provider: {provider?.code}</p>
+              <h3 className="font-bold text-slate-900 text-base">{name}</h3>
+              <p className="text-xs text-slate-400 font-mono">Mã provider: GEMINI</p>
             </div>
           </div>
 
           <span
             className={`px-3 py-1 text-xs font-bold rounded-full ${
-              provider?.status ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+              status ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
             }`}
           >
-            ● {provider?.status ? "Hoạt động (Active)" : "Tạm ngưng (Disabled)"}
+            ● {status ? "Hoạt động (Active)" : "Tạm ngưng (Disabled)"}
           </span>
         </div>
 
-        <form action={handleUpdateProvider} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
               Tên Nhà cung cấp
             </label>
             <input
               type="text"
-              name="name"
-              defaultValue={provider?.name || "Google Gemini AI Provider"}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-navy focus:outline-none"
             />
@@ -131,8 +134,8 @@ export default async function SYSADMINAIProviderPage({
               <Key className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="password"
-                name="apiKey"
-                defaultValue="••••••••••••••••••••••••••••"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Nhập API Key mới nếu muốn thay đổi..."
                 className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-navy focus:outline-none"
               />
@@ -149,8 +152,8 @@ export default async function SYSADMINAIProviderPage({
               </label>
               <input
                 type="text"
-                name="defaultModel"
-                defaultValue={provider?.defaultModel || "gemini-1.5-flash"}
+                value={defaultModel}
+                onChange={(e) => setDefaultModel(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-navy focus:outline-none"
               />
@@ -161,8 +164,8 @@ export default async function SYSADMINAIProviderPage({
                 Trạng thái Provider
               </label>
               <select
-                name="status"
-                defaultValue={String(provider?.status ?? true)}
+                value={String(status)}
+                onChange={(e) => setStatus(e.target.value === "true")}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-navy focus:outline-none"
               >
                 <option value="true">Bật (Active)</option>
@@ -173,9 +176,17 @@ export default async function SYSADMINAIProviderPage({
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all"
+            disabled={saving}
+            className="w-full py-2.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            Lưu Cấu hình Platform AI Provider
+            {saving ? (
+              <span>Đang lưu cấu hình AI Provider...</span>
+            ) : (
+              <>
+                <Save className="w-4 h-4 text-gold" />
+                <span>Lưu Cấu hình Platform AI Provider</span>
+              </>
+            )}
           </button>
         </form>
 

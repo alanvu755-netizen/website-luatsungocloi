@@ -57,7 +57,7 @@ export async function validateAIGenerationGate(
   // 6. Provider & Model Validation
   const provider = await prisma.aIProvider.findUnique({ where: { code: "GEMINI" } });
   if (!provider || !provider.status) {
-    return { allowed: false, errorCode: "PROVIDER_UNAVAILABLE", errorMessage: "Nhà cung cấp Gemini AI đang bảo trì" };
+    return { allowed: false, errorCode: "PROVIDER_UNAVAILABLE", errorMessage: "Vui lòng liên hệ quản trị để được hỗ trợ" };
   }
 
   const allowedModels: string[] = JSON.parse(provider.allowedModels || "[]");

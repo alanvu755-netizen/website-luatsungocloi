@@ -15,10 +15,15 @@ export interface GeminiGenerateResult {
  * Generates a rich, highly detailed legal article draft when API Key is pending
  */
 function generateStructuredLegalDraft(promptText: string): string {
-  const cleanPrompt = promptText.trim();
-  const title = cleanPrompt.split("\n")[0].replace(/^[-*•\d.\s]+/, "") || "Tư vấn pháp lý chuyên sâu";
+  const lines = promptText
+    .split("\n")
+    .map((l) => l.replace(/^[-*•\d.\s]+/, "").trim())
+    .filter((l) => l !== "" && !l.toLowerCase().includes("hãy viết bài") && !l.toLowerCase().includes("dựa trên các ý chính"));
 
-  return `BÀI VIẾT TƯ VẤN PHÁP LÝ: ${title.toUpperCase()}
+  const rawTitle = lines[0] || "Tư vấn thủ tục pháp lý và bảo vệ quyền lợi hợp pháp";
+  const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+
+  return `TƯ VẤN PHÁP LUẬT: ${title.toUpperCase()}
 
 1. TỔNG QUAN VẤN ĐỀ VÀ THỰC TRẠNG PHÁP LÝ
 Trong bối cảnh hệ thống pháp luật ngày càng được hoàn thiện và áp dụng chặt chẽ, việc nắm rõ quy định pháp luật liên quan đến "${title}" đóng vai trò then chốt giúp người dân và doanh nghiệp bảo vệ tối đa quyền và lợi ích hợp pháp của mình. 
@@ -28,6 +33,7 @@ Thực tế cho thấy, nhiều trường hợp do không nắm vững trình t�
 2. CÁC QUY ĐỊNH PHÁP LUẬT CỐT LÕI CẦN LƯU Ý
 Khi giải quyết các vấn đề liên quan đến chủ đề này, Quý khách hàng cần lưu ý các điểm quan trọng sau:
 
+${lines.map((l) => `• ${l}`).join("\n")}
 • Căn cứ pháp lý áp dụng: Tuân thủ nghiêm ngặt các quy định của Bộ luật chuyên ngành hiện hành và các Văn bản hướng dẫn thi hành mới nhất.
 • Hồ sơ và chứng cứ pháp lý: Cần chuẩn bị đầy đủ các văn bản, giấy tờ chứng minh quyền sở hữu, hợp đồng giao kết và các tài liệu giao dịch liên quan.
 • Trình tự thủ tục thực hiện: Thực hiện đúng thời hạn, đúng cơ quan thẩm quyền giải quyết (Tòa án, Cơ quan quản lý nhà nước hoặc Tổ chức hành nghề công chứng).
@@ -56,7 +62,7 @@ export async function generateWithGemini(
     console.warn("⚠️ GEMINI_API_KEY not set. Using structured legal AI content generation engine.");
     
     // Simulate generation delay
-    await new Promise((res) => setTimeout(res, 1200));
+    await new Promise((res) => setTimeout(res, 1000));
 
     const content = generateStructuredLegalDraft(options.prompt);
 

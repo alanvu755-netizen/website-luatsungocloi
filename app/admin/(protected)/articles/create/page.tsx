@@ -134,9 +134,11 @@ export default function CreateArticlePage() {
 
     const lines = aiDraft.split("\n").filter((l) => l.trim() !== "");
     let extractedTitle = "";
-    if (lines.length > 0 && (lines[0].toLowerCase().includes("bài viết") || lines[0].toLowerCase().includes("tư vấn"))) {
-      extractedTitle = lines[0].replace(/^bài viết tư vấn pháp lý:\s*/i, "").replace(/^[-#*:]+\s*/, "").trim();
-    }
+      extractedTitle = lines[0]
+        .replace(/^tư vấn pháp luật:\s*/i, "")
+        .replace(/^bài viết tư vấn pháp lý:\s*/i, "")
+        .replace(/^[-#*:]+\s*/, "")
+        .trim();
 
     if (extractedTitle) {
       handleTitleChange(extractedTitle);

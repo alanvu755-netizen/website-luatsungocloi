@@ -20,33 +20,32 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const mimeType = file.type || "image/png";
-    const base64String = buffer.toString("base64");
 
-    // 1. Primary Strategy for Serverless/Vercel & Production: Upload to ImgBB Free Cloud CDN
-    // Ensures clean, short, permanent HTTPS image URLs (e.g., https://i.ibb.co/...)
+    // 1. Primary Cloud Upload Strategy: 0-Config Permanent High-Speed CDN (Catbox Cloud Storage)
+    // Guarantees clean, short, permanent HTTPS image URLs (e.g., https://files.catbox.moe/...) without Vercel filesystem errors.
     try {
-      const imgbbApiKey = process.env.IMGBB_API_KEY || "6d207e02198a847eaf9d0d31fe07e356";
-      const imgbbFormData = new FormData();
-      imgbbFormData.append("image", base64String);
-      imgbbFormData.append("name", file.name);
+      const cloudFormData = new FormData();
+      cloudFormData.append("reqtype", "fileupload");
+      const blob = new Blob([buffer], { type: mimeType });
+      cloudFormData.append("fileToUpload", blob, file.name);
 
-      const imgbbRes = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+      const cloudRes = await fetch("https://catbox.moe/user/api.php", {
         method: "POST",
-        body: imgbbFormData,
+        body: cloudFormData,
       });
 
-      if (imgbbRes.ok) {
-        const imgbbData = await imgbbRes.json();
-        if (imgbbData.success && imgbbData.data?.url) {
+      if (cloudRes.ok) {
+        const textUrl = (await cloudRes.text()).trim();
+        if (textUrl.startsWith("http://") || textUrl.startsWith("https://")) {
           return NextResponse.json({
             success: true,
-            url: imgbbData.data.url,
+            url: textUrl,
             fileName: file.name,
           });
         }
       }
-    } catch (cloudErr) {
-      console.warn("ImgBB cloud upload failed, attempting local filesystem or data URL fallback...", cloudErr);
+    } catch (cloudErr: any) {
+      console.warn("Catbox cloud upload failed, attempting local filesystem or data URL fallback...", cloudErr.message);
     }
 
     // 2. Secondary Strategy for Local Development: Save to public/uploads
@@ -71,11 +70,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Last Resort Fallback: Base64 Data URL
-    const base64Url = `data:${mimeType};base64,${base64String}`;
+    // 3. Last Resort Fallback (if cloud CDN & local disk both fail):
+    const base64String = buffer.toString("base64");
     return NextResponse.json({
       success: true,
-      url: base64Url,
+      url: `data:${mimeType};base64,${base64String}`,
       fileName: file.name,
     });
   } catch (error: any) {

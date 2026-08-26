@@ -133,15 +133,15 @@ export default function Footer({ settings }: FooterProps) {
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Đất đai – Nhà ở</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/hon-nhan" className="flex items-center gap-1 hover:text-gold transition-colors">
+              <Link href="/thu-vien-phap-luat/hon-nhan-gia-dinh" className="flex items-center gap-1 hover:text-gold transition-colors">
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Hôn nhân – Gia đình</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/dan-su" className="flex items-center gap-1 hover:text-gold transition-colors">
+              <Link href="/thu-vien-phap-luat/dan-su-hop-dong" className="flex items-center gap-1 hover:text-gold transition-colors">
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Dân sự – Hợp đồng</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/dan-su" className="flex items-center gap-1 hover:text-gold transition-colors">
+              <Link href="/thu-vien-phap-luat/tranh-tung" className="flex items-center gap-1 hover:text-gold transition-colors">
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Tranh tụng tại Tòa</span>
               </Link>
@@ -149,11 +149,11 @@ export default function Footer({ settings }: FooterProps) {
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Doanh nghiệp</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/hinh-su" className="flex items-center gap-1 hover:text-gold transition-colors">
+              <Link href="/thu-vien-phap-luat/hinh-su-hanh-chinh" className="flex items-center gap-1 hover:text-gold transition-colors">
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Hình sự – Hành chính</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/tu-van-thuong-xuyen" className="col-span-2 flex items-center gap-1 hover:text-gold transition-colors">
+              <Link href="/thu-vien-phap-luat/doanh-nghiep" className="col-span-2 flex items-center gap-1 hover:text-gold transition-colors">
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Tư vấn pháp lý thường xuyên</span>
               </Link>

@@ -153,10 +153,6 @@ export default function Footer({ settings }: FooterProps) {
                 <ChevronRight className="w-3.5 h-3.5 text-gold" />
                 <span>Hình sự – Hành chính</span>
               </Link>
-              <Link href="/thu-vien-phap-luat/doanh-nghiep" className="col-span-2 flex items-center gap-1 hover:text-gold transition-colors">
-                <ChevronRight className="w-3.5 h-3.5 text-gold" />
-                <span>Tư vấn pháp lý thường xuyên</span>
-              </Link>
             </div>
           </div>
 

@@ -141,6 +141,9 @@ export default function CreateArticlePage() {
         .trim();
 
     if (extractedTitle) {
+      if (extractedTitle === extractedTitle.toUpperCase() && extractedTitle.length > 5) {
+        extractedTitle = extractedTitle.charAt(0).toUpperCase() + extractedTitle.slice(1).toLowerCase();
+      }
       handleTitleChange(extractedTitle);
     } else if (!title) {
       handleTitleChange("Tư vấn Pháp luật: " + (aiHighlights.slice(0, 40) || "Bài viết mới"));

@@ -23,7 +23,7 @@ function generateStructuredLegalDraft(promptText: string): string {
   const rawTitle = lines[0] || "Tư vấn thủ tục pháp lý và bảo vệ quyền lợi hợp pháp";
   const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
 
-  return `TƯ VẤN PHÁP LUẬT: ${title.toUpperCase()}
+  return `Tư vấn Pháp luật: ${title}
 
 1. TỔNG QUAN VẤN ĐỀ VÀ THỰC TRẠNG PHÁP LÝ
 Trong bối cảnh hệ thống pháp luật ngày càng được hoàn thiện và áp dụng chặt chẽ, việc nắm rõ quy định pháp luật liên quan đến "${title}" đóng vai trò then chốt giúp người dân và doanh nghiệp bảo vệ tối đa quyền và lợi ích hợp pháp của mình. 

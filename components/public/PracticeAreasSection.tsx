@@ -11,58 +11,93 @@ interface PracticeAreasSectionProps {
   items?: PracticeAreaItem[];
 }
 
+function getHrefForTitle(title: string): string {
+  const upper = title.toUpperCase();
+  if (upper.includes("HÔN NHÂN") || upper.includes("GIA ĐÌNH")) {
+    return "/thu-vien-phap-luat/hon-nhan-gia-dinh";
+  }
+  if (upper.includes("DÂN SỰ") || upper.includes("HỢP ĐỒNG")) {
+    return "/thu-vien-phap-luat/dan-su-hop-dong";
+  }
+  if (upper.includes("TRANH TỤNG") || upper.includes("TÒA")) {
+    return "/thu-vien-phap-luat/tranh-tung";
+  }
+  if (upper.includes("DOANH NGHIỆP")) {
+    return "/thu-vien-phap-luat/doanh-nghiep";
+  }
+  if (upper.includes("HÌNH SỰ") || upper.includes("HÀNH CHÍNH")) {
+    return "/thu-vien-phap-luat/dat-dai";
+  }
+  return "/thu-vien-phap-luat/dat-dai";
+}
+
+function getIconForTitle(title: string) {
+  const upper = title.toUpperCase();
+  if (upper.includes("HÔN NHÂN")) return Users;
+  if (upper.includes("DÂN SỰ")) return FileText;
+  if (upper.includes("TRANH TỤNG")) return Scale;
+  if (upper.includes("DOANH NGHIỆP")) return Building2;
+  if (upper.includes("HÌNH SỰ")) return Shield;
+  return Home;
+}
+
 const DEFAULT_CATEGORIES = [
   {
     id: "cat1",
     title: "ĐẤT ĐAI – NHÀ Ở",
-    description: "Tư vấn, tranh chấp, chuyển nhượng, thừa kế, tặng cho, hợp thức hóa...",
+    description: "Tư vấn thủ tục sang tên, tranh chấp tài sản đất đai, tách thửa, cấp sổ đỏ lần đầu.",
     icon: Home,
     href: "/thu-vien-phap-luat/dat-dai",
   },
   {
     id: "cat2",
     title: "HÔN NHÂN – GIA ĐÌNH",
-    description: "Ly hôn, tranh chấp tài sản, quyền nuôi con, cấp dưỡng, kết hôn với người nước ngoài...",
+    description: "Tư vấn thuận tình/đơn phương ly hôn, chia tài sản chung, quyền nuôi con.",
     icon: Users,
     href: "/thu-vien-phap-luat/hon-nhan-gia-dinh",
   },
   {
     id: "cat3",
     title: "DÂN SỰ – HỢP ĐỒNG",
-    description: "Soạn thảo, rà soát hợp đồng, tranh chấp dân sự, bồi thường thiệt hại ngoài hợp đồng...",
+    description: "Tư vấn soạn thảo, rà soát hợp đồng dân sự, giải quyết tranh chấp hợp đồng vay mượn.",
     icon: FileText,
     href: "/thu-vien-phap-luat/dan-su-hop-dong",
   },
   {
     id: "cat4",
     title: "TRANH TỤNG TẠI TÒA",
-    description: "Đại diện theo ủy quyền, bảo vệ quyền lợi tại Tòa án các cấp...",
+    description: "Đại diện tham gia tranh tụng bảo vệ quyền và lợi ích hợp pháp tại các cấp Tòa án.",
     icon: Scale,
     href: "/thu-vien-phap-luat/tranh-tung",
   },
   {
     id: "cat5",
     title: "DOANH NGHIỆP",
-    description: "Thành lập, thay đổi, giải thể, tư vấn pháp lý thường xuyên cho doanh nghiệp...",
+    description: "Tư vấn pháp lý thường xuyên cho doanh nghiệp, thành lập, giải thể và tranh chấp nội bộ.",
     icon: Building2,
     href: "/thu-vien-phap-luat/doanh-nghiep",
   },
   {
     id: "cat6",
     title: "HÌNH SỰ – HÀNH CHÍNH",
-    description: "Bào chữa, bảo vệ quyền lợi bị can, bị cáo, khiếu nại, tố cáo, xử phạt...",
+    description: "Bào chữa cho bị cáo, bảo vệ quyền lợi người bị hại trong các vụ án hình sự, khiếu kiện hành chính.",
     icon: Shield,
     href: "/thu-vien-phap-luat/dat-dai",
   },
 ];
 
 export default function PracticeAreasSection({ items }: PracticeAreasSectionProps) {
-  const displayCategories = DEFAULT_CATEGORIES.map((cat, idx) => {
-    if (items && items[idx]) {
-      return { ...cat, title: items[idx].title.toUpperCase() };
-    }
-    return cat;
-  });
+  let displayCategories = DEFAULT_CATEGORIES;
+
+  if (items && items.length > 0) {
+    displayCategories = items.map((item, idx) => ({
+      id: item.id || `db_cat_${idx}`,
+      title: item.title.toUpperCase(),
+      description: item.description || DEFAULT_CATEGORIES[idx % DEFAULT_CATEGORIES.length].description,
+      icon: getIconForTitle(item.title),
+      href: getHrefForTitle(item.title),
+    }));
+  }
 
   return (
     <section id="linh-vuc" className="py-12 sm:py-16 bg-slate-50 border-b border-slate-200">

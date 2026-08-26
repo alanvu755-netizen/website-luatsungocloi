@@ -130,15 +130,13 @@ export default async function ProtectedAdminLayout({
               </span>
             </div>
           </div>
-          <form action="/api/admin/logout" method="POST">
-            <button
-              type="submit"
-              className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-300 hover:text-red-400 transition-colors"
-              title="Đăng xuất"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
+          <a
+            href="/api/admin/logout"
+            className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-300 hover:text-red-400 transition-colors"
+            title="Đăng xuất"
+          >
+            <LogOut className="w-4 h-4" />
+          </a>
         </div>
 
       </aside>

@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db/prisma";
 import { validateAIGenerationGate } from "./security";
-import { generateWithGemini } from "./provider";
+import { generateWithGemini, ContentObjective, buildObjectiveSystemInstruction } from "./provider";
 
 export interface AIGenerateParams {
   userId: string;
   siteId: string;
   promptCode: string;
   promptText: string;
+  contentObjective?: ContentObjective;
+  isRegenerate?: boolean;
   model?: string;
   requestId: string;
 }
@@ -24,6 +26,7 @@ export async function runAIGeneration(params: AIGenerateParams) {
     return {
       success: existingGen.status === "COMPLETED",
       generation: existingGen,
+      resultDraft: existingGen.resultDraft,
       message: "Yêu cầu đã được xử lý trước đó (Idempotent response)",
     };
   }
@@ -66,41 +69,19 @@ export async function runAIGeneration(params: AIGenerateParams) {
   });
 
   try {
-    // 4. Build Context with Prompt Hierarchy & Verified Facts
-    const siteConfig = await prisma.aISiteConfig.findUnique({ where: { siteId: params.siteId } });
-    const verifiedKnowledge = await prisma.aIKnowledgeItem.findMany({
-      where: { siteId: params.siteId, isVerified: true },
-    });
-
-    const verifiedFactsText = verifiedKnowledge.map((k) => `- ${k.topic}: ${k.content}`).join("\n");
-
-    const systemInstruction = `
-NGUYÊN TẮC AN TOÀN NỘI DUNG PHÁP LÝ & CONTENT MARKETING CHUYÊN SÂU:
-1. Bạn là trợ lý sinh nội dung Content Marketing cao cấp cho Luật sư – Thạc sĩ Lê Thị Ngọc Lợi.
-2. Tông giọng (Brand Tone): ${siteConfig?.brandTone || "Trang trọng, chuyên nghiệp, uy tín, đồng cảm"}.
-3. THÔNG TIN ĐÃ XÁC MINH (VERIFIED FACTS):
-${verifiedFactsText || "- Cử nhân Luật (Đại học Cần Thơ), Thạc sĩ Luật (Đại học Luật TP.HCM), hơn 13 năm kinh nghiệm trong ngành Kiểm sát và Ban Nội chính Tỉnh ủy Đồng Tháp."}
-4. CẤU TRÚC BÀI VIẾT CONTENT MARKETING (CONVERSION-ORIENTED):
-   - Tiêu đề hấp dẫn, chính xác chuyên môn, chứa từ khóa.
-   - Mở bài nêu bật vấn đề/nỗi đau thực tế mà người dân/doanh nghiệp đang gặp phải.
-   - Thân bài phân tích quy định pháp luật rõ ràng, dễ hiểu, chia nhỏ các mục heading (H2, H3) và bullet points.
-   - Thể hiện năng lực & uy tín chuyên môn của Luật sư - Thạc sĩ Lê Thị Ngọc Lợi để tạo dựng niềm tin.
-   - Kết bài đưa ra lời dẫn nhập tự nhiên, khuyến nghị người đọc tìm kiếm sự tư vấn chuyên sâu của Luật sư và định hướng tới hành động "ĐĂNG KÝ TƯ VẤN".
-5. QUY TẮC AN TOÀN & CHUYỂN ĐỔI:
-   - Tuyệt đối KHÔNG sử dụng tiêu đề giật gân (clickbait).
-   - KHÔNG bịa đặt bằng cấp, giải thưởng, danh sách khách hàng, vụ án hay hứa hẹn cam kết thắng kiện 100%.
-   - KHÔNG biến bài viết thành quảng cáo thương mại thô bạo. Lời gọi tư vấn phải diễn ra tự nhiên, đồng cảm.
-6. Nội dung sinh ra CHỈ LÀ BẢN NHÁP (DRAFT) để con người xem xét và phê duyệt trước khi xuất bản.
-    `.trim();
+    // 4. Build System Instruction for Content Objective
+    const systemInstruction = buildObjectiveSystemInstruction(params.contentObjective, params.isRegenerate);
 
     // 5. Call Gemini Provider
     const result = await generateWithGemini({
       model,
       prompt: params.promptText,
+      contentObjective: params.contentObjective,
+      isRegenerate: params.isRegenerate,
       systemInstruction,
     });
 
-    // 6. Transaction to Update AIGeneration & AIUsage (Idempotency Safe)
+    // 6. Transaction to Update AIGeneration & AIUsage
     const [updatedGen] = await prisma.$transaction([
       prisma.aIGeneration.update({
         where: { id: generation.id },
@@ -118,11 +99,6 @@ ${verifiedFactsText || "- Cử nhân Luật (Đại học Cần Thơ), Thạc s�
       // Update AIUsage Single Source of Truth
       prisma.aIUsage.upsert({
         where: { siteId_yearMonth: { siteId: params.siteId, yearMonth } },
-        update: {
-          requestCount: { increment: 1 },
-          totalTokens: { increment: result.inputTokens + result.outputTokens },
-          totalCost: { increment: 0.001 },
-        },
         create: {
           siteId: params.siteId,
           yearMonth,
@@ -130,47 +106,34 @@ ${verifiedFactsText || "- Cử nhân Luật (Đại học Cần Thơ), Thạc s�
           totalTokens: result.inputTokens + result.outputTokens,
           totalCost: 0.001,
         },
-      }),
-
-      // AuditLog
-      prisma.auditLog.create({
-        data: {
-          siteId: params.siteId,
-          adminUserId: params.userId,
-          action: "AI_GENERATION",
-          entityType: "AIGeneration",
-          entityId: generation.id,
-          metadata: JSON.stringify({
-            promptCode: params.promptCode,
-            model,
-            tokens: result.inputTokens + result.outputTokens,
-          }),
+        update: {
+          requestCount: { increment: 1 },
+          totalTokens: { increment: result.inputTokens + result.outputTokens },
+          totalCost: { increment: 0.001 },
         },
       }),
     ]);
 
     return {
       success: true,
-      resultDraft: updatedGen.resultDraft,
+      resultDraft: result.content,
       generation: updatedGen,
     };
   } catch (error: any) {
-    // 7. Handle Provider Failure -> Update Status FAILED
-    const failedGen = await prisma.aIGeneration.update({
+    // Failure handling: Record FAILED status in AIGeneration lifecycle
+    await prisma.aIGeneration.update({
       where: { id: generation.id },
       data: {
         status: "FAILED",
-        failedAt: new Date(),
-        errorCode: "PROVIDER_UNAVAILABLE",
-        riskFlags: JSON.stringify([error.message || "Provider call failed"]),
+        errorCode: "PROVIDER_ERROR",
+        riskFlags: JSON.stringify([error.message || "Execution Error"]),
       },
     });
 
     return {
       success: false,
-      errorCode: "PROVIDER_UNAVAILABLE",
-      message: "Lỗi kết nối nhà cung cấp AI",
-      generation: failedGen,
+      errorCode: "PROVIDER_ERROR",
+      message: error.message || "Tạo nội dung AI gặp sự cố",
     };
   }
 }

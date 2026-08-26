@@ -132,13 +132,21 @@ export default function CreateArticlePage() {
   const handleApplyAIDraft = () => {
     if (!aiDraft) return;
 
-    // Populate content fields
-    if (!title) {
+    const lines = aiDraft.split("\n").filter((l) => l.trim() !== "");
+    let extractedTitle = "";
+    if (lines.length > 0 && (lines[0].toLowerCase().includes("bài viết") || lines[0].toLowerCase().includes("tư vấn"))) {
+      extractedTitle = lines[0].replace(/^bài viết tư vấn pháp lý:\s*/i, "").replace(/^[-#*:]+\s*/, "").trim();
+    }
+
+    if (extractedTitle) {
+      handleTitleChange(extractedTitle);
+    } else if (!title) {
       handleTitleChange("Tư vấn Pháp luật: " + (aiHighlights.slice(0, 40) || "Bài viết mới"));
     }
+
     setContent(aiDraft);
-    setExcerpt(aiDraft.slice(0, 160) + "...");
-    setSeoTitle(title || "Tư vấn Pháp luật | Luật sư Lê Thị Ngọc Lợi");
+    setExcerpt(aiDraft.slice(0, 180) + "...");
+    setSeoTitle(extractedTitle || title || "Tư vấn Pháp luật | Luật sư Lê Thị Ngọc Lợi");
     setMetaDescription(aiDraft.slice(0, 150));
     setAiUsed(true);
     setTimeout(() => setAiUsed(false), 3000);

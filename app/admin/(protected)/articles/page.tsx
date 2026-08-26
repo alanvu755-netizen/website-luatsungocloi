@@ -33,10 +33,11 @@ export default async function AdminArticlesPage({
   async function handleDelete(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
-    await deleteArticle(id, authUser.siteId);
+    await deleteArticle(id, targetSiteId);
     redirect("/admin/articles");
   }
 

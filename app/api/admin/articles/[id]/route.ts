@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
-import { updateArticle } from "@/lib/services/article.service";
+import { updateArticle, deleteArticle } from "@/lib/services/article.service";
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveSiteId } from "@/lib/services/site.service";
 
@@ -42,6 +42,25 @@ export async function PUT(
     const body = await request.json();
     const article = await updateArticle(params.id, siteId, body);
     return NextResponse.json({ success: true, article });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message || "Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getAuthenticatedUser();
+    const siteId = await getEffectiveSiteId(user);
+
+    if (!user || !siteId) {
+      return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
+    }
+
+    await deleteArticle(params.id, siteId);
+    return NextResponse.json({ success: true, message: "Xóa bài viết thành công" });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || "Server Error" }, { status: 500 });
   }

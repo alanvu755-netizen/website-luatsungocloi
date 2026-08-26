@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PhoneCall, Calendar, User, Mail, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,9 +11,9 @@ export default async function AdminConsultationsPage({
   searchParams: { page?: string; q?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const page = Math.max(1, parseInt(searchParams.page || "1", 10));
   const pageSize = 10;

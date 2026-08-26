@@ -38,25 +38,24 @@ export default async function ProtectedAdminLayout({
       title: "TỔNG QUAN & TƯ VẤN",
       items: [
         { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
-        { label: "Khách hàng đăng ký tư vấn", href: "/admin/consultations", icon: MessageSquare },
+        { label: "Đăng ký tư vấn", href: "/admin/consultations", icon: MessageSquare },
       ],
     },
     {
       title: "NỘI DUNG CONTENT CMS",
       items: [
         { label: "Tất cả bài viết", href: "/admin/articles", icon: FileText },
-        { label: "Chuyên mục Thư viện Pháp luật", href: "/admin/menus", icon: FolderTree },
-        { label: "Chuyên khoa / Lĩnh vực tư vấn", href: "/admin/practice-areas", icon: Scale },
-        { label: "AI Content Studio (Trợ lý AI)", href: "/admin/ai-content", icon: Sparkles },
+        { label: "Menu quản lý", href: "/admin/menus", icon: FolderTree },
+        { label: "Lĩnh vực tư vấn", href: "/admin/practice-areas", icon: Scale },
         { label: "Chỉ số nổi bật (Stats)", href: "/admin/statistics", icon: BarChart3 },
       ],
     },
     {
       title: "PROFILE & TRANG CHỦ",
       items: [
-        { label: "Ảnh & Banner 'Đồng Hành Pháp Lý'", href: "/admin/hero", icon: Scale },
-        { label: "Giới thiệu & Ảnh văn phòng", href: "/admin/introduction", icon: User },
-        { label: "Kênh liên hệ (Zalo/FB/Hotline)", href: "/admin/contact", icon: PhoneCall },
+        { label: "Ảnh & Banner", href: "/admin/hero", icon: Scale },
+        { label: "Giới thiệu", href: "/admin/introduction", icon: User },
+        { label: "Kênh liên hệ", href: "/admin/contact", icon: PhoneCall },
       ],
     },
     {
@@ -64,7 +63,7 @@ export default async function ProtectedAdminLayout({
       items: [
         { label: "Thư viện ảnh", href: "/admin/media", icon: ImageIcon },
         { label: "Cấu hình SEO", href: "/admin/seo", icon: Search },
-        { label: "Cài đặt chung & Email thông báo", href: "/admin/settings", icon: Settings },
+        { label: "Cài đặt chung", href: "/admin/settings", icon: Settings },
         ...(isSysAdmin
           ? [{ label: "AI Provider (SYSADMIN)", href: "/admin/ai-provider", icon: Cpu }]
           : []),

@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import { Search, CheckCircle } from "lucide-react";
 
@@ -9,22 +10,23 @@ export default async function AdminSeoPage({
   searchParams?: { success?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const settings = await prisma.siteSettings.findUnique({ where: { siteId } });
 
   async function handleUpdateSeo(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const seoTitle = formData.get("seoTitle") as string;
     const seoDescription = formData.get("seoDescription") as string;
 
     await prisma.siteSettings.update({
-      where: { siteId: authUser.siteId },
+      where: { siteId: targetSiteId },
       data: {
         seoTitle,
         seoDescription,

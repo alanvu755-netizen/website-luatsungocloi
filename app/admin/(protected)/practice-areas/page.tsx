@@ -1,24 +1,26 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getPracticeAreas, createPracticeArea, deletePracticeArea } from "@/lib/services/practice-area.service";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import { Scale, Plus, Trash2, Check } from "lucide-react";
 
 export default async function AdminPracticeAreasPage() {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const practiceAreas = await getPracticeAreas(siteId);
 
   async function handleAdd(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const title = formData.get("title") as string;
 
-    await createPracticeArea(authUser.siteId, {
+    await createPracticeArea(targetSiteId, {
       title,
       displayOrder: practiceAreas.length + 1,
       status: "PUBLISHED",
@@ -30,10 +32,11 @@ export default async function AdminPracticeAreasPage() {
   async function handleDelete(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
-    await deletePracticeArea(id, authUser.siteId);
+    await deletePracticeArea(id, targetSiteId);
     redirect("/admin/practice-areas");
   }
 

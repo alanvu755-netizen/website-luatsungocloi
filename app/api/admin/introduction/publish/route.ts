@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
-import { publishHero } from "@/lib/services/hero.service";
+import { publishIntroduction } from "@/lib/services/introduction.service";
 import { getEffectiveSiteId } from "@/lib/services/site.service";
 
 export async function POST() {
@@ -12,9 +12,9 @@ export async function POST() {
       return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
     }
 
-    const hero = await publishHero(siteId, user.id);
-    return NextResponse.json({ success: true, hero });
+    const published = await publishIntroduction(siteId, user.id);
+    return NextResponse.json({ success: true, intro: published });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || "Server Error" }, { status: 500 });
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

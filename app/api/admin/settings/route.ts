@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 
 export async function GET() {
   const user = await getAuthenticatedUser();
-  if (!user?.siteId) {
+  const siteId = await getEffectiveSiteId(user);
+
+  if (!user || !siteId) {
     return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
   }
 
   const settings = await prisma.siteSettings.findUnique({
-    where: { siteId: user.siteId },
+    where: { siteId },
   });
 
   return NextResponse.json({ settings });
@@ -17,7 +20,9 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const user = await getAuthenticatedUser();
-  if (!user?.siteId) {
+  const siteId = await getEffectiveSiteId(user);
+
+  if (!user || !siteId) {
     return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
   }
 
@@ -26,7 +31,7 @@ export async function PUT(req: Request) {
     const { phone, email, consultationNotificationEmail, address, floatingContactEnabled, footerDisclaimer } = body;
 
     const settings = await prisma.siteSettings.upsert({
-      where: { siteId: user.siteId },
+      where: { siteId },
       update: {
         phone,
         email,
@@ -36,21 +41,18 @@ export async function PUT(req: Request) {
         footerDisclaimer,
       },
       create: {
-        siteId: user.siteId,
+        siteId,
         phone: phone || "0902 081 061",
-        email: email || "luatsuloi@gmail.com",
+        email: email || "luatsungocloi@gmail.com",
         consultationNotificationEmail: consultationNotificationEmail || "luatsungocloi@gmail.com",
         address: address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp",
         floatingContactEnabled: floatingContactEnabled ?? true,
-        footerDisclaimer: footerDisclaimer || "© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.",
+        footerDisclaimer: footerDisclaimer || "",
       },
     });
 
-    return NextResponse.json({ settings, message: "✓ Cập nhật cài đặt chung thành công!" });
+    return NextResponse.json({ success: true, settings });
   } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || "Lỗi cập nhật cài đặt." },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

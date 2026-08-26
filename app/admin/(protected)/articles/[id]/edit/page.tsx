@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Save, CheckCircle, AlertCircle, Check } from "lucide-react";
+import ArticleEditorToolbar from "@/components/admin/ArticleEditorToolbar";
 
 interface Submenu {
   id: string;
@@ -26,6 +27,7 @@ export default function EditArticlePage() {
   const router = useRouter();
   const params = useParams();
   const articleId = params?.id as string;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [menus, setMenus] = useState<Menu[]>([]);
   const [practiceAreas, setPracticeAreas] = useState<PracticeAreaOption[]>([]);
@@ -303,11 +305,19 @@ export default function EditArticlePage() {
           <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
             Nội dung chi tiết Bài viết
           </label>
+
+          <ArticleEditorToolbar
+            content={content}
+            onChange={setContent}
+            textareaRef={textareaRef}
+          />
+
           <textarea
+            ref={textareaRef}
             rows={12}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm leading-relaxed text-slate-800 focus:ring-2 focus:ring-navy focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-b-xl text-sm leading-relaxed text-slate-800 focus:ring-2 focus:ring-navy focus:outline-none"
           />
         </div>
 

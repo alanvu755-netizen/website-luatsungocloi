@@ -1,20 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
-
-const playfair = Playfair_Display({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-playfair",
-  weight: ["400", "600", "700", "800"],
-  display: "swap",
-});
-
-const beVietnam = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-be-vietnam",
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi | Tư vấn pháp lý chuyên nghiệp",
@@ -24,12 +9,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="vi" className={`${playfair.variable} ${beVietnam.variable}`}>
-      <body className="antialiased bg-white text-slate-800 selection:bg-navy selection:text-white">
+    <html lang="vi" className="scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-gold selection:text-white">
         {children}
       </body>
     </html>

@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getContactChannels, updateContactChannel, toggleContactChannelStatus } from "@/lib/services/contact-channel.service";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import { PhoneCall, CheckCircle2, AlertCircle, Globe } from "lucide-react";
 import { ToggleSubmitButton, SaveSubmitButton } from "@/components/admin/ChannelSubmitButton";
@@ -41,16 +42,17 @@ export default async function AdminContactPage({
   searchParams?: { error?: string; success?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const channels = await getContactChannels(siteId);
 
   async function handleToggle(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
     const currentStatus = formData.get("currentStatus") === "true";
@@ -58,7 +60,7 @@ export default async function AdminContactPage({
 
     let targetRedirect = "";
     try {
-      await toggleContactChannelStatus(id, authUser.siteId, newStatus);
+      await toggleContactChannelStatus(id, targetSiteId, newStatus);
       targetRedirect = "/admin/contact?success=Cập nhật trạng thái thành công";
     } catch (err: any) {
       if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
@@ -71,7 +73,8 @@ export default async function AdminContactPage({
   async function handleUpdateChannel(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
     const platform = (formData.get("platform") as any) || undefined;
@@ -81,7 +84,7 @@ export default async function AdminContactPage({
 
     let targetRedirect = "";
     try {
-      await updateContactChannel(id, authUser.siteId, {
+      await updateContactChannel(id, targetSiteId, {
         platform,
         label,
         url,

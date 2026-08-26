@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import Link from "next/link";
 import {
   User,
@@ -14,7 +15,7 @@ import {
 
 export default async function AdminDashboardPage() {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
   if (!siteId) {
     return (
@@ -52,7 +53,7 @@ export default async function AdminDashboardPage() {
       {/* Welcome Card */}
       <div className="bg-gradient-to-r from-navy to-navy-dark text-white rounded-2xl p-6 shadow-md border border-navy-light/30">
         <h1 className="font-serif text-2xl font-bold mb-1">
-          Xin chào, {user.name}!
+          Xin chào, {user?.name || "Quản trị viên"}!
         </h1>
         <p className="text-slate-200 text-sm">
           Chào mừng bạn đến với hệ thống quản trị nội dung website Luật sư – Thạc sĩ Lê Thị Ngọc Lợi.

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Save, CheckCircle, RefreshCw, AlertCircle, Check } from "lucide-react";
+import ArticleEditorToolbar from "@/components/admin/ArticleEditorToolbar";
 
 interface Submenu {
   id: string;
@@ -24,6 +25,7 @@ interface PracticeAreaOption {
 
 export default function CreateArticlePage() {
   const router = useRouter();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [practiceAreas, setPracticeAreas] = useState<PracticeAreaOption[]>([]);
   const [selectedMenuId, setSelectedMenuId] = useState<string>("");
@@ -421,12 +423,20 @@ export default function CreateArticlePage() {
           <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
             Nội dung chi tiết Bài viết <span className="text-red-500">*</span>
           </label>
+
+          <ArticleEditorToolbar
+            content={content}
+            onChange={setContent}
+            textareaRef={textareaRef}
+          />
+
           <textarea
+            ref={textareaRef}
             rows={12}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Nhập nội dung bài viết chi tiết hoặc bấm 'Dùng nội dung này' từ Trợ lý AI ở trên..."
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm leading-relaxed text-slate-800 focus:ring-2 focus:ring-navy focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-b-xl text-sm leading-relaxed text-slate-800 focus:ring-2 focus:ring-navy focus:outline-none"
           />
         </div>
 

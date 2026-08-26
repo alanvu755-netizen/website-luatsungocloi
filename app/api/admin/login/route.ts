@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { createSession } from "@/lib/auth/session";
 import { loginSchema } from "@/lib/validation/schemas";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 
 export async function POST(request: Request) {
   try {
@@ -38,17 +39,20 @@ export async function POST(request: Request) {
     // Create HttpOnly Session Cookie
     await createSession(user.id, user.email, user.role.name, user.siteId);
 
-    // Record AuditLog
-    await prisma.auditLog.create({
-      data: {
-        siteId: user.siteId,
-        adminUserId: user.id,
-        action: "LOGIN",
-        entityType: "AdminUser",
-        entityId: user.id,
-        metadata: JSON.stringify({ email: user.email, role: user.role.name }),
-      },
-    });
+    // Record AuditLog safely for SYSADMIN and SITE_ADMIN
+    const effectiveSiteId = await getEffectiveSiteId(user);
+    if (effectiveSiteId) {
+      await prisma.auditLog.create({
+        data: {
+          siteId: effectiveSiteId,
+          adminUserId: user.id,
+          action: "LOGIN",
+          entityType: "AdminUser",
+          entityId: user.id,
+          metadata: JSON.stringify({ email: user.email, role: user.role.name }),
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -60,6 +64,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
+    console.error("Login API Error:", error);
     if (error.name === "ZodError") {
       return NextResponse.json(
         { message: error.errors[0]?.message || "Dữ liệu không hợp lệ" },
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: "Lỗi máy chủ nội bộ trong quá trình xử lý" },
+      { message: error.message || "Lỗi máy chủ nội bộ trong quá trình xử lý" },
       { status: 500 }
     );
   }

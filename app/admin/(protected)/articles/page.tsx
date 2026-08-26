@@ -1,6 +1,7 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getArticles, deleteArticle } from "@/lib/services/article.service";
 import { getMenus } from "@/lib/services/menu.service";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FileText, Plus, Search, Trash2, Edit, Eye } from "lucide-react";
@@ -11,9 +12,9 @@ export default async function AdminArticlesPage({
   searchParams?: { page?: string; search?: string; menuId?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const currentPage = parseInt(searchParams?.page || "1");
   const search = searchParams?.search || "";

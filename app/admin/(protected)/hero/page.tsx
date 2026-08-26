@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Scale, CheckCircle, Save, AlertCircle, Check } from "lucide-react";
+import { Scale, CheckCircle, Save, AlertCircle, Check, Upload } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminHeroPage() {
@@ -21,6 +21,7 @@ export default function AdminHeroPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
@@ -103,15 +104,43 @@ export default function AdminHeroPage() {
     return <div className="p-8 text-center text-slate-500">Đang tải dữ liệu Banner Trang chủ...</div>;
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.message || "Tải ảnh thất bại.");
+
+      setDraftImageUrl(data.url);
+      setFeedback({ type: "success", message: `✓ Đã tải ảnh lên thành công: ${data.fileName}` });
+    } catch (err: any) {
+      setFeedback({ type: "error", message: err.message || "Lỗi khi tải ảnh lên." });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-navy font-serif">Quản lý Nội dung Banner "Đồng Hành Pháp Lý" (Hero Section)</h1>
+          <h1 className="text-xl font-bold text-navy font-serif">Quản lý Nội dung Ảnh & Banner (Hero Section)</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý Tiêu đề lớn, Mô tả, Thẻ tiêu chí, Nút bấm và Ảnh chân dung đứng hiển thị trên Banner Trang chủ.
+            Quản lý Tiêu đề lớn, Mô tả, Nút bấm và Tải ảnh Chân dung đứng hiển thị trên Banner Trang chủ.
           </p>
         </div>
 
@@ -245,18 +274,39 @@ export default function AdminHeroPage() {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-100">
-            <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-              Đường dẫn / Upload Ảnh Chân dung đứng (Hero Portrait Image)
+          <div className="pt-2 border-t border-slate-100 space-y-3">
+            <label className="block text-xs font-semibold uppercase text-slate-700">
+              Tải ảnh Chân dung đứng từ máy tính (Hero Portrait Image)
             </label>
-            <input
-              type="text"
-              value={draftImageUrl}
-              onChange={(e) => setDraftImageUrl(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-600 focus:ring-2 focus:ring-navy focus:outline-none"
-            />
-            <p className="text-[11px] text-slate-500 mt-1">Ảnh chân dung đứng phục vụ Banner Trang chủ (Mặc định: /customer-reference.png).</p>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <label className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-all shadow-xs">
+                <Upload className="w-4 h-4 text-navy" />
+                <span>{uploadingImage ? "Đang tải ảnh lên..." : "📁 Chọn tệp ảnh từ máy tính"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              <span className="text-xs text-slate-400 text-center sm:text-left">hoặc nhập URL:</span>
+
+              <input
+                type="text"
+                value={draftImageUrl}
+                onChange={(e) => setDraftImageUrl(e.target.value)}
+                required
+                placeholder="/customer-reference.png"
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 focus:ring-2 focus:ring-navy focus:outline-none"
+              />
+            </div>
+
+            <div className="relative w-36 aspect-[3/4] rounded-lg overflow-hidden border border-slate-300 bg-slate-100">
+              <Image src={draftImageUrl || "/customer-reference.png"} alt="Xem trước Ảnh Banner" fill className="object-cover" />
+            </div>
           </div>
 
           <div className="pt-4 flex justify-end">

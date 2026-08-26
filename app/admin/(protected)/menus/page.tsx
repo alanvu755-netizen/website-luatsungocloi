@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getMenus, createMenu, updateMenu, deleteMenu, createSubmenu, deleteSubmenu, MAX_SUBMENU_PER_MENU } from "@/lib/services/menu.service";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import { FolderTree, Plus, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
 
@@ -9,22 +10,23 @@ export default async function AdminMenusPage({
   searchParams?: { error?: string; success?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const menus = await getMenus(siteId);
 
   async function handleAddMenu(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const title = formData.get("title") as string;
     const slug = formData.get("slug") as string;
 
     try {
-      await createMenu(authUser.siteId, {
+      await createMenu(targetSiteId, {
         title,
         slug,
         displayOrder: menus.length + 1,
@@ -40,37 +42,40 @@ export default async function AdminMenusPage({
   async function handleToggleMenuStatus(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
     const currentStatus = formData.get("currentStatus") as string;
     const newStatus = currentStatus === "VISIBLE" ? "HIDDEN" : "VISIBLE";
 
-    await updateMenu(id, authUser.siteId, { status: newStatus });
+    await updateMenu(id, targetSiteId, { status: newStatus });
     redirect("/admin/menus");
   }
 
   async function handleDeleteMenu(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
-    await deleteMenu(id, authUser.siteId);
+    await deleteMenu(id, targetSiteId);
     redirect("/admin/menus");
   }
 
   async function handleAddSubmenu(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const menuId = formData.get("menuId") as string;
     const title = formData.get("title") as string;
     const slug = formData.get("slug") as string;
 
     try {
-      await createSubmenu(authUser.siteId, menuId, {
+      await createSubmenu(targetSiteId, menuId, {
         title,
         slug,
         status: "VISIBLE",
@@ -85,10 +90,11 @@ export default async function AdminMenusPage({
   async function handleDeleteSubmenu(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) return;
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) return;
 
     const id = formData.get("id") as string;
-    await deleteSubmenu(id, authUser.siteId);
+    await deleteSubmenu(id, targetSiteId);
     redirect("/admin/menus");
   }
 

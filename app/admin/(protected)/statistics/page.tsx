@@ -1,4 +1,5 @@
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
 import { getAllStatistics, updateStatisticItem, createStatisticItem } from "@/lib/services/statistic.service";
 import { CheckCircle, BarChart3, Plus, Hash } from "lucide-react";
@@ -10,16 +11,17 @@ export default async function AdminStatisticsPage({
   searchParams?: { success?: string; error?: string };
 }) {
   const user = await getAuthenticatedUser();
-  const siteId = user?.siteId;
+  const siteId = await getEffectiveSiteId(user);
 
-  if (!siteId) redirect("/admin/login");
+  if (!user || !siteId) redirect("/admin/login");
 
   const items = await getAllStatistics(siteId);
 
   async function handleUpdateStatistic(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) redirect("/admin/login");
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) redirect("/admin/login");
 
     const id = formData.get("id") as string;
     const value = (formData.get("value") as string || "").trim();
@@ -32,7 +34,7 @@ export default async function AdminStatisticsPage({
       redirect("/admin/statistics?error=Vui lòng nhập đầy đủ Con số và Nhãn chỉ số");
     }
 
-    await updateStatisticItem(id, authUser.siteId, {
+    await updateStatisticItem(id, targetSiteId, {
       value,
       label,
       subtext: subtext || null,
@@ -48,7 +50,8 @@ export default async function AdminStatisticsPage({
   async function handleCreateStatistic(formData: FormData) {
     "use server";
     const authUser = await getAuthenticatedUser();
-    if (!authUser?.siteId) redirect("/admin/login");
+    const targetSiteId = await getEffectiveSiteId(authUser);
+    if (!authUser || !targetSiteId) redirect("/admin/login");
 
     const value = (formData.get("value") as string || "").trim();
     const label = (formData.get("label") as string || "").trim();
@@ -59,7 +62,7 @@ export default async function AdminStatisticsPage({
       redirect("/admin/statistics?error=Vui lòng nhập đầy đủ Con số và Nhãn chỉ số mới");
     }
 
-    await createStatisticItem(authUser.siteId, {
+    await createStatisticItem(targetSiteId, {
       value,
       label,
       subtext: subtext || null,

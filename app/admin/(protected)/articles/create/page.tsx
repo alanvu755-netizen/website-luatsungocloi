@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Save, CheckCircle, RefreshCw, AlertCircle, Check, RotateCcw, X } from "lucide-react";
-import ArticleEditorToolbar from "@/components/admin/ArticleEditorToolbar";
+import RichVisualArticleEditor from "@/components/admin/RichVisualArticleEditor";
 
 interface Submenu {
   id: string;
@@ -473,7 +473,7 @@ export default function CreateArticlePage() {
             </div>
           </div>
 
-          {/* Article Rich Content Area */}
+          {/* Article Rich Visual Content Area */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <label className="block text-xs font-bold uppercase text-navy">
@@ -481,19 +481,9 @@ export default function CreateArticlePage() {
               </label>
             </div>
 
-            <ArticleEditorToolbar
-              textareaRef={textareaRef}
+            <RichVisualArticleEditor
               content={content}
               onChange={setContent}
-            />
-
-            <textarea
-              ref={textareaRef}
-              rows={16}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Nhập nội dung chi tiết bài viết (Hỗ trợ định dạng Markdown/HTML)..."
-              className="w-full p-4 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none"
             />
           </div>
 

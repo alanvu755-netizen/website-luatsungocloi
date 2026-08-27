@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Upload, Bold, Italic, Heading2, Heading3, List, Check, Eye, Code, Trash2, Link as LinkIcon, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, Bold, Italic, Heading2, Heading3, List, Check, Eye, Code, Link as LinkIcon, AlertCircle, ImageIcon } from "lucide-react";
 
 interface RichArticleEditorProps {
   content: string;
@@ -12,31 +12,44 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   const [activeTab, setActiveTab] = useState<"visual" | "code">("visual");
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const visualEditorRef = useRef<HTMLDivElement>(null);
+  const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Formatting helper at cursor position
-  const insertTextAtCursor = (before: string, after: string = "") => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      onChange(content + `${before}Nội dung${after}`);
-      return;
+  // Keep Visual contentEditable container in sync with props when switching tabs
+  useEffect(() => {
+    if (activeTab === "visual" && visualEditorRef.current) {
+      if (visualEditorRef.current.innerHTML !== content) {
+        visualEditorRef.current.innerHTML = content || "";
+      }
     }
+  }, [activeTab, content]);
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end) || "Nội dung";
-    const replacement = `${before}${selectedText}${after}`;
+  // Execute formatting command in Visual Mode
+  const execCommand = (command: string, value: string | undefined = undefined) => {
+    if (activeTab === "visual" && visualEditorRef.current) {
+      visualEditorRef.current.focus();
+      document.execCommand(command, false, value);
+      onChange(visualEditorRef.current.innerHTML);
+    } else if (activeTab === "code" && codeTextareaRef.current) {
+      const textarea = codeTextareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selected = content.substring(start, end) || "Nội dung";
+      let replacement = selected;
 
-    const newContent = content.substring(0, start) + replacement + content.substring(end);
-    onChange(newContent);
+      if (command === "bold") replacement = `<b>${selected}</b>`;
+      if (command === "italic") replacement = `<i>${selected}</i>`;
+      if (command === "formatBlock" && value === "h2") replacement = `<h2>${selected}</h2>`;
+      if (command === "formatBlock" && value === "h3") replacement = `<h3>${selected}</h3>`;
+      if (command === "insertUnorderedList") replacement = `\n- ${selected}\n`;
 
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
-    }, 50);
+      const updated = content.substring(0, start) + replacement + content.substring(end);
+      onChange(updated);
+    }
   };
 
-  // Upload Image with Client Validation (AT-IMG-11, AT-IMG-12)
+  // Upload Image Handler
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -78,17 +91,15 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
         throw new Error(data.message || "Tải ảnh lên máy chủ thất bại.");
       }
 
-      // Ensure alt text is safe and properly escaped
-      const cleanAltText = file.name.replace(/["']/g, "").slice(0, 100);
-      const imageTag = `\n<p><img src="${data.url}" alt="${cleanAltText}" class="w-full h-auto rounded-xl my-4 shadow-sm" /></p>\n`;
+      const cleanAlt = file.name.replace(/["']/g, "").slice(0, 100);
+      const imgHtml = `<p><img src="${data.url}" alt="${cleanAlt}" class="w-full h-auto rounded-xl my-4 shadow-sm" /></p>`;
 
-      if (activeTab === "code" && textareaRef.current) {
-        const textarea = textareaRef.current;
-        const start = textarea.selectionStart;
-        const newContent = content.substring(0, start) + imageTag + content.substring(start);
-        onChange(newContent);
+      if (activeTab === "visual" && visualEditorRef.current) {
+        visualEditorRef.current.focus();
+        document.execCommand("insertHTML", false, imgHtml);
+        onChange(visualEditorRef.current.innerHTML);
       } else {
-        onChange(content + imageTag);
+        onChange(content + `\n${imgHtml}\n`);
       }
 
       setFeedback({
@@ -104,23 +115,20 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       });
     } finally {
       setUploading(false);
-      // Reset input value to allow re-uploading the same file if needed
       e.target.value = "";
     }
   };
 
-  // Helper to insert hyperlink
   const handleInsertLink = () => {
     const url = prompt("Nhập địa chỉ đường dẫn (URL):", "https://");
     if (!url || url.trim() === "" || url === "https://") return;
 
-    // Security check: Reject javascript: protocol
     if (url.trim().toLowerCase().startsWith("javascript:")) {
       alert("Đường dẫn không hợp lệ vì lý do bảo mật.");
       return;
     }
 
-    insertTextAtCursor(`<a href="${url.trim()}" target="_blank" rel="noopener noreferrer">`, "</a>");
+    execCommand("createLink", url.trim());
   };
 
   return (
@@ -128,14 +136,18 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       {/* Top Toolbar */}
       <div className="bg-slate-100 border-b border-slate-300 p-2.5 flex flex-wrap items-center justify-between gap-2">
         
-        {/* Left Section: Editor Mode Tabs & Formatting Tools */}
+        {/* Left: Mode Switcher & Formatting Tools */}
         <div className="flex items-center flex-wrap gap-1.5">
-          
-          {/* Mode Switcher */}
+          {/* Tab Switcher: Only 1 Mode Selected at a Time */}
           <div className="bg-slate-200 p-0.5 rounded-lg flex items-center gap-0.5 border border-slate-300 mr-2">
             <button
               type="button"
-              onClick={() => setActiveTab("visual")}
+              onClick={() => {
+                if (visualEditorRef.current) {
+                  onChange(visualEditorRef.current.innerHTML);
+                }
+                setActiveTab("visual");
+              }}
               className={`px-3 py-1 text-xs font-bold rounded-md flex items-center gap-1.5 transition-all ${
                 activeTab === "visual"
                   ? "bg-navy text-white shadow-xs"
@@ -147,7 +159,12 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("code")}
+              onClick={() => {
+                if (visualEditorRef.current) {
+                  onChange(visualEditorRef.current.innerHTML);
+                }
+                setActiveTab("code");
+              }}
               className={`px-3 py-1 text-xs font-bold rounded-md flex items-center gap-1.5 transition-all ${
                 activeTab === "code"
                   ? "bg-navy text-white shadow-xs"
@@ -159,10 +176,10 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             </button>
           </div>
 
-          {/* Quick Formatting Tools */}
+          {/* Formatting Buttons */}
           <button
             type="button"
-            onClick={() => insertTextAtCursor("<b>", "</b>")}
+            onClick={() => execCommand("bold")}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
             title="In đậm (Bold)"
           >
@@ -171,7 +188,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <button
             type="button"
-            onClick={() => insertTextAtCursor("<i>", "</i>")}
+            onClick={() => execCommand("italic")}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
             title="In nghiêng (Italic)"
           >
@@ -182,7 +199,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <button
             type="button"
-            onClick={() => insertTextAtCursor("<h2>", "</h2>")}
+            onClick={() => execCommand("formatBlock", "h2")}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors font-bold text-xs"
             title="Tiêu đề H2"
           >
@@ -191,7 +208,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <button
             type="button"
-            onClick={() => insertTextAtCursor("<h3>", "</h3>")}
+            onClick={() => execCommand("formatBlock", "h3")}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors font-bold text-xs"
             title="Tiêu đề H3"
           >
@@ -202,7 +219,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <button
             type="button"
-            onClick={() => insertTextAtCursor("\n- ", "")}
+            onClick={() => execCommand("insertUnorderedList")}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
             title="Danh sách gạch đầu dòng"
           >
@@ -219,7 +236,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           </button>
         </div>
 
-        {/* Right Section: Upload Action & Notification */}
+        {/* Right: Upload Image Action */}
         <div className="flex items-center gap-2">
           {feedback && (
             <span
@@ -248,58 +265,33 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
         </div>
       </div>
 
-      {/* Editor Main Content Body */}
+      {/* SINGLE CONTAINER DISPLAYED AT ANY ONE TIME */}
       {activeTab === "visual" ? (
-        <div className="p-4 space-y-4 bg-white">
-          {/* Visual WYSIWYG Live Preview Box */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase text-navy border-b border-slate-100 pb-1">
-              <span>👁️ Hiển thị bài viết & Ảnh trực quan (WYSIWYG Live Preview):</span>
-            </div>
-
-            <div className="min-h-[220px] max-h-[420px] overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm leading-relaxed font-sans shadow-inner">
-              {content ? (
-                <div
-                  className="prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-lg prose-h2:font-bold prose-h3:text-base prose-h3:font-semibold prose-p:my-2 prose-img:rounded-xl prose-img:shadow-sm prose-img:my-3 prose-a:text-navy prose-a:underline"
-                  dangerouslySetInnerHTML={{
-                    __html: content
-                      .replace(/\n\n/g, "<br/><br/>")
-                      .replace(/\n/g, "<br/>"),
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs italic space-y-1">
-                  <ImageIcon className="w-8 h-8 text-slate-300" />
-                  <span>Nội dung bài viết và các hình ảnh được chèn sẽ tự động hiển thị trực quan tại đây...</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Editable Text Area */}
-          <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase text-slate-700">
-              ✏️ Ô Nhập & Chỉnh sửa Văn bản bài viết:
-            </label>
-            <textarea
-              ref={textareaRef}
-              rows={12}
-              value={content}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Nhập hoặc chỉnh sửa nội dung chi tiết bài viết tại đây..."
-              className="w-full p-4 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none bg-white text-slate-900"
-            />
-          </div>
+        /* MODE A: VISUAL RICH EDITOR CONTAINER ONLY */
+        <div className="p-4 bg-white">
+          <div
+            ref={visualEditorRef}
+            contentEditable
+            onInput={() => {
+              if (visualEditorRef.current) {
+                onChange(visualEditorRef.current.innerHTML);
+              }
+            }}
+            onBlur={() => {
+              if (visualEditorRef.current) {
+                onChange(visualEditorRef.current.innerHTML);
+              }
+            }}
+            className="min-h-[350px] p-4 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-lg prose-h2:font-bold prose-h3:text-base prose-h3:font-semibold prose-p:my-2 prose-img:rounded-xl prose-img:shadow-sm prose-img:my-3 prose-a:text-navy prose-a:underline"
+            suppressContentEditableWarning
+          />
         </div>
       ) : (
-        /* Source Code Tab */
-        <div className="p-4 space-y-2 bg-slate-950">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-400">
-            <span>💻 Mã nguồn HTML bài viết:</span>
-          </div>
+        /* MODE B: SOURCE CODE CONTAINER ONLY */
+        <div className="p-4 bg-slate-950">
           <textarea
-            ref={textareaRef}
-            rows={18}
+            ref={codeTextareaRef}
+            rows={16}
             value={content}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Chỉnh sửa mã nguồn HTML..."

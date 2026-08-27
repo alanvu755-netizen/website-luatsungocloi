@@ -41,13 +41,13 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     const mimeType = file.type || "image/png";
 
-    // 1. Primary Permanent Storage Strategy: Cloud Storage CDN (Catbox Cloud Storage)
-    // Guarantees clean, short, permanent HTTPS image URLs (e.g., https://files.catbox.moe/...) without Vercel filesystem errors.
+    // 1. Primary Permanent Storage Strategy: Cloud Storage CDN (Catbox Permanent Image Storage)
+    // Uses Node.js File API for guaranteed multipart serialization on Vercel Serverless.
     try {
       const cloudFormData = new FormData();
       cloudFormData.append("reqtype", "fileupload");
-      const blob = new Blob([buffer], { type: mimeType });
-      cloudFormData.append("fileToUpload", blob, file.name);
+      const cloudFile = new File([buffer], file.name, { type: mimeType });
+      cloudFormData.append("fileToUpload", cloudFile);
 
       const cloudRes = await fetch("https://catbox.moe/user/api.php", {
         method: "POST",
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (cloudErr: any) {
-      console.warn("Cloud CDN upload unavailable, falling back to local filesystem...", cloudErr.message);
+      console.warn("Cloud CDN upload failed, attempting local filesystem fallback...", cloudErr.message);
     }
 
     // 2. Secondary Strategy for Local Development: Save to public/uploads

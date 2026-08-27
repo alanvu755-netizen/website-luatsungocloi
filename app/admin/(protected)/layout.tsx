@@ -17,6 +17,7 @@ import {
   BarChart3,
   MessageSquare,
   Sparkles,
+  KeyRound,
 } from "lucide-react";
 
 export default async function ProtectedAdminLayout({
@@ -67,6 +68,12 @@ export default async function ProtectedAdminLayout({
         ...(isSysAdmin
           ? [{ label: "AI Provider (SYSADMIN)", href: "/admin/ai-provider", icon: Cpu }]
           : []),
+      ],
+    },
+    {
+      title: "TÀI KHOẢN & BẢO MẬT",
+      items: [
+        { label: "Đổi mật khẩu", href: "/admin/change-password", icon: KeyRound },
       ],
     },
   ];

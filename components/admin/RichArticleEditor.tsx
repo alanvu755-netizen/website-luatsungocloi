@@ -46,12 +46,14 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
     }
   };
 
+  const draggedImgRef = useRef<HTMLImageElement | null>(null);
+
   // Setup HTML5 Drag & Drop for reordering images and dropping files into editor
   useEffect(() => {
     const editor = visualEditorRef.current;
     if (!editor) return;
 
-    // Make all images draggable
+    // Make all images draggable and attach dragstart listeners
     const updateImagesDraggable = () => {
       const imgs = editor.querySelectorAll("img");
       imgs.forEach((img) => {
@@ -59,6 +61,18 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       });
     };
     updateImagesDraggable();
+
+    // Dragstart handler for existing images inside editor
+    const handleDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === "IMG" && editor.contains(target)) {
+        draggedImgRef.current = target as HTMLImageElement;
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", (target as HTMLImageElement).src);
+        }
+      }
+    };
 
     // Image click handler
     const handleEditorClick = (e: MouseEvent) => {
@@ -73,6 +87,9 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
     // Dragover handler to calculate caret drop position
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "move";
+      }
       setDragOverActive(true);
 
       // Get caret position from mouse coordinates
@@ -98,7 +115,42 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       e.preventDefault();
       setDragOverActive(false);
 
-      // Case A: Dropped image files from desktop
+      // Case 1: Reordering existing image inside editor
+      if (draggedImgRef.current && editor.contains(draggedImgRef.current)) {
+        const draggedImg = draggedImgRef.current;
+        draggedImgRef.current = null;
+
+        let targetRange = savedRangeRef.current;
+        if (document.caretRangeFromPoint) {
+          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+          if (range && editor.contains(range.commonAncestorContainer)) {
+            targetRange = range;
+          }
+        }
+
+        if (targetRange) {
+          // Remove old parent paragraph if it only contained this image
+          const oldParent = draggedImg.closest("p");
+
+          // Build clean center paragraph wrapper for target location
+          const pWrapper = document.createElement("p");
+          pWrapper.className = "text-center my-4";
+          pWrapper.appendChild(draggedImg);
+
+          targetRange.insertNode(pWrapper);
+
+          if (oldParent && oldParent !== pWrapper && oldParent.innerHTML.trim() === "") {
+            oldParent.remove();
+          }
+
+          onChange(editor.innerHTML);
+          setFeedback({ type: "success", message: "✓ Đã di chuyển ảnh đến vị trí dòng chữ mới thành công!" });
+          setTimeout(() => setFeedback(null), 3000);
+          return;
+        }
+      }
+
+      // Case 2: Dropped image files from desktop
       if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         if (file.type.startsWith("image/")) {
@@ -129,12 +181,14 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       }
     };
 
+    editor.addEventListener("dragstart", handleDragStart);
     editor.addEventListener("click", handleEditorClick);
     editor.addEventListener("dragover", handleDragOver);
     editor.addEventListener("dragleave", handleDragLeave);
     editor.addEventListener("drop", handleDrop);
 
     return () => {
+      editor.removeEventListener("dragstart", handleDragStart);
       editor.removeEventListener("click", handleEditorClick);
       editor.removeEventListener("dragover", handleDragOver);
       editor.removeEventListener("dragleave", handleDragLeave);

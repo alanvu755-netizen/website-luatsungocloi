@@ -296,11 +296,10 @@ export default function AdminHeroPage() {
 
               <input
                 type="text"
-                value={draftImageUrl}
+                value={draftImageUrl.startsWith("data:image/") ? `[🖼️ Tệp ảnh đã tải lên - ${draftImageUrl.slice(0, 30)}...]` : draftImageUrl}
                 onChange={(e) => setDraftImageUrl(e.target.value)}
-                required
-                placeholder="/customer-reference.png"
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 focus:ring-2 focus:ring-navy focus:outline-none"
+                placeholder="https://... hoặc /image.png"
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy focus:outline-none truncate text-slate-700 bg-slate-50"
               />
             </div>
 

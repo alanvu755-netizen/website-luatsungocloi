@@ -8,7 +8,7 @@ export async function getHero(siteId: string) {
   });
 }
 
-export const getPublishedHero = memoize(async (siteId: string) => {
+export async function getPublishedHero(siteId: string) {
   const hero = await prisma.hero.findUnique({
     where: { siteId },
   });
@@ -27,7 +27,7 @@ export const getPublishedHero = memoize(async (siteId: string) => {
     imageId: hero.pubImageId,
     logoId: hero.pubLogoId,
   };
-});
+}
 
 export async function updateHeroDraft(
   siteId: string,

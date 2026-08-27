@@ -8,7 +8,7 @@ export async function getIntroduction(siteId: string) {
   });
 }
 
-export const getPublishedIntroduction = memoize(async (siteId: string) => {
+export async function getPublishedIntroduction(siteId: string) {
   const intro = await prisma.introduction.findUnique({
     where: { siteId },
   });
@@ -19,7 +19,7 @@ export const getPublishedIntroduction = memoize(async (siteId: string) => {
     content: intro.pubContent,
     imageUrl: intro.pubImageUrl || "/NgocLoi-office.jpg",
   };
-});
+}
 
 export async function updateIntroductionDraft(
   siteId: string,

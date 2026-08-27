@@ -71,7 +71,7 @@ export default function AdminHeroPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Không thể lưu nội dung bản nháp.");
 
-      setFeedback({ type: "success", message: "✓ Bản nháp Banner Trang chủ đã được lưu thành công." });
+      setFeedback({ type: "success", message: "✓ Đã lưu Bản nháp Banner. Vui lòng bấm 'Xuất bản ra Website Public' (nút màu xanh) để áp dụng ngay lên Trang chủ." });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi lưu bản nháp." });
     } finally {

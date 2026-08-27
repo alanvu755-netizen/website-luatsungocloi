@@ -3,6 +3,11 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
+// Allowed MIME types policy
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+// File size limit: 5MB
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
@@ -17,11 +22,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Vui lòng chọn tệp ảnh để tải lên." }, { status: 400 });
     }
 
+    // Security & File Validation (AT-IMG-11, AT-IMG-12)
+    if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { message: "Định dạng tệp không hợp lệ. Chỉ chấp nhận các định dạng ảnh: JPG, PNG, WEBP, GIF." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { message: "Dung lượng tệp quá lớn. Vui lòng chọn tệp ảnh dưới 5MB." },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const mimeType = file.type || "image/png";
 
-    // 1. Primary Cloud Upload Strategy: 0-Config Permanent High-Speed CDN (Catbox Cloud Storage)
+    // 1. Primary Permanent Storage Strategy: Cloud Storage CDN (Catbox Cloud Storage)
     // Guarantees clean, short, permanent HTTPS image URLs (e.g., https://files.catbox.moe/...) without Vercel filesystem errors.
     try {
       const cloudFormData = new FormData();
@@ -45,7 +65,7 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (cloudErr: any) {
-      console.warn("Catbox cloud upload failed, attempting local filesystem or data URL fallback...", cloudErr.message);
+      console.warn("Cloud CDN upload unavailable, falling back to local filesystem...", cloudErr.message);
     }
 
     // 2. Secondary Strategy for Local Development: Save to public/uploads
@@ -70,13 +90,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Last Resort Fallback (if cloud CDN & local disk both fail):
-    const base64String = buffer.toString("base64");
-    return NextResponse.json({
-      success: true,
-      url: `data:${mimeType};base64,${base64String}`,
-      fileName: file.name,
-    });
+    return NextResponse.json(
+      { message: "Không thể lưu trữ ảnh. Vui lòng thử lại sau." },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

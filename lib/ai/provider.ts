@@ -112,10 +112,37 @@ ${ctaGuidance}
 ${regenNote}`;
 }
 
-/**
- * Intelligent Real Article Generator Fallback Engine
- * Generates rich, complete, publication-ready legal articles for each Objective without any outline placeholders.
- */
+export const generateStructuredLegalDraft = (
+  userHighlight: string,
+  objectiveCode?: string,
+  isRegenerate?: boolean
+) => {
+  const code = objectiveCode || "LEGAL_QNA";
+  const prefix = isRegenerate ? "[Biến thể Mới] " : "";
+  if (code === "LEGAL_QNA") {
+    return `${prefix}TRẢ LỜI NHANH VẤN ĐỀ PHÁP LÝ
+Đối với thông tin "${userHighlight}", quy định pháp luật hiện hành quy định rõ ràng.
+
+CĂN CỨ PHÁP LÝ ÁP DỤNG:
+- Tuân thủ quy định Bộ luật Dân sự và các văn bản hướng dẫn thi hành [CẦN KIỂM TRA].
+
+ĐỊNH HƯỚNG GIẢI PHÁP TỪ LUẬT SƯ – THẠC SĨ LÊ THỊ NGỌC LỢI:
+Liên hệ ngay Hotline 0902 081 061 để được hỗ trợ thẩm định hồ sơ trực tiếp.`;
+  }
+
+  if (code === "RISK_WARNING") {
+    return `${prefix}CÁC NGUY CƠ VÀ SAI LẦM PHỔ BIẾN KHI XỬ LÝ
+Đối với thông tin "${userHighlight}", việc tự thương lượng không có tư vấn pháp lý dẫn đến rủi ro thua kiện.
+
+CÁC ĐIỂM CẦN LƯU Ý:
+- Rủi ro giao dịch bằng giấy tay.
+- Rủi ro quá thời hiệu khởi kiện.
+
+Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi (Hotline 0902 081 061).`;
+  }
+
+  return generateObjectiveFallbackDraft(userHighlight, undefined, { code, name: "Tư vấn Pháp luật", promptGuidance: "Hướng dẫn" }, isRegenerate);
+};
 export function generateObjectiveFallbackDraft(
   userHighlight: string,
   topic?: string,

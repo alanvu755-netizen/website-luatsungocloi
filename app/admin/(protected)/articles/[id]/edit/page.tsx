@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Sparkles, Save, CheckCircle, AlertCircle, Check, RefreshCw, RotateCcw, X } from "lucide-react";
-import ArticleEditorToolbar from "@/components/admin/ArticleEditorToolbar";
+import RichArticleEditor from "@/components/admin/RichArticleEditor";
 
 interface Submenu {
   id: string;
@@ -495,19 +495,9 @@ export default function EditArticlePage() {
               </label>
             </div>
 
-            <ArticleEditorToolbar
-              textareaRef={textareaRef}
+            <RichArticleEditor
               content={content}
               onChange={setContent}
-            />
-
-            <textarea
-              ref={textareaRef}
-              rows={16}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Nhập nội dung chi tiết bài viết (Hỗ trợ định dạng Markdown/HTML)..."
-              className="w-full p-4 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none"
             />
           </div>
 

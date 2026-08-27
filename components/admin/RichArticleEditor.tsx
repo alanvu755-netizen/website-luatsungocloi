@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
+import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle, AlignLeft, AlignCenter, AlignRight, AlignJustify, Trash2, Maximize2 } from "lucide-react";
 
 interface RichArticleEditorProps {
   content: string;
@@ -12,26 +12,26 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   const [activeTab, setActiveTab] = useState<"visual" | "code">("visual");
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
 
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
 
-  // Save active cursor position/selection in Visual Editor
+  // Save active flashing cursor position/selection in Visual Editor
   const saveCursorSelection = () => {
     if (typeof window !== "undefined") {
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0) {
         const range = sel.getRangeAt(0);
-        // Ensure range is within visual editor container
         if (visualEditorRef.current && visualEditorRef.current.contains(range.commonAncestorContainer)) {
-          savedRangeRef.current = range;
+          savedRangeRef.current = range.cloneRange();
         }
       }
     }
   };
 
-  // Restore cursor position/selection
+  // Restore active flashing cursor position/selection
   const restoreCursorSelection = () => {
     if (typeof window !== "undefined" && visualEditorRef.current) {
       visualEditorRef.current.focus();
@@ -45,10 +45,32 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
     }
   };
 
+  // Listen for global click on images inside visual editor
+  useEffect(() => {
+    const handleEditorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === "IMG" && visualEditorRef.current?.contains(target)) {
+        setSelectedImage(target as HTMLImageElement);
+      } else {
+        setSelectedImage(null);
+      }
+    };
+
+    const currentRef = visualEditorRef.current;
+    if (currentRef) {
+      currentRef.addEventListener("click", handleEditorClick);
+    }
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener("click", handleEditorClick);
+      }
+    };
+  }, [activeTab]);
+
   // Format unformatted raw text into proper HTML paragraph blocks (<p>)
   const formatRawToHtmlParagraphs = (raw: string) => {
     if (!raw) return "";
-    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div")) {
+    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div") || raw.trim().startsWith("<blockquote")) {
       return raw;
     }
     return raw
@@ -101,7 +123,55 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
     }
   };
 
-  // Upload Image Handler with Exact Cursor Position Restoration
+  // Resize Selected Image Helper
+  const resizeSelectedImage = (widthPercent: string) => {
+    if (selectedImage && visualEditorRef.current) {
+      selectedImage.style.width = widthPercent;
+      selectedImage.style.maxWidth = "100%";
+      selectedImage.style.height = "auto";
+      onChange(visualEditorRef.current.innerHTML);
+    }
+  };
+
+  // Align Selected Image Helper
+  const alignSelectedImage = (align: "left" | "center" | "right") => {
+    if (selectedImage && visualEditorRef.current) {
+      const parentPara = selectedImage.closest("p");
+      if (parentPara) {
+        if (align === "center") {
+          parentPara.style.textAlign = "center";
+          selectedImage.style.display = "inline-block";
+          selectedImage.style.float = "none";
+        } else if (align === "left") {
+          parentPara.style.textAlign = "left";
+          selectedImage.style.float = "left";
+          selectedImage.style.marginRight = "1rem";
+          selectedImage.style.marginBottom = "0.5rem";
+        } else if (align === "right") {
+          parentPara.style.textAlign = "right";
+          selectedImage.style.float = "right";
+          selectedImage.style.marginLeft = "1rem";
+          selectedImage.style.marginBottom = "0.5rem";
+        }
+      }
+      onChange(visualEditorRef.current.innerHTML);
+    }
+  };
+
+  // Delete Selected Image
+  const deleteSelectedImage = () => {
+    if (selectedImage && visualEditorRef.current) {
+      const parentPara = selectedImage.closest("p");
+      selectedImage.remove();
+      if (parentPara && parentPara.innerHTML.trim() === "") {
+        parentPara.remove();
+      }
+      setSelectedImage(null);
+      onChange(visualEditorRef.current.innerHTML);
+    }
+  };
+
+  // Upload Image Handler with Exact Flashing Cursor Position Restoration
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -144,7 +214,8 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       }
 
       const cleanAlt = file.name.replace(/["']/g, "").slice(0, 100);
-      const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" class="max-w-full h-auto rounded-xl mx-auto shadow-md border border-slate-200" /></p>`;
+      // Interactive resizable image HTML tag with resize handle styling
+      const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" style="width: 80%; max-width: 100%; height: auto; resize: both; cursor: pointer;" class="rounded-xl mx-auto shadow-md border border-slate-200" /></p>`;
 
       if (activeTab === "visual" && visualEditorRef.current) {
         restoreCursorSelection();
@@ -185,7 +256,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   };
 
   return (
-    <div className="border border-slate-300 rounded-xl overflow-hidden shadow-xs bg-white space-y-0">
+    <div className="border border-slate-300 rounded-xl overflow-hidden shadow-xs bg-white space-y-0 relative">
       {/* Professional Formatting Toolbar */}
       <div className="bg-slate-100 border-b border-slate-300 p-2.5 flex flex-wrap items-center justify-between gap-2">
         
@@ -404,6 +475,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           )}
 
           <label
+            onMouseDown={saveCursorSelection}
             onClick={saveCursorSelection}
             className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-navy hover:bg-navy-dark text-white font-bold text-xs rounded-lg shadow-xs transition-all"
           >
@@ -420,6 +492,85 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           </label>
         </div>
       </div>
+
+      {/* Floating Image Resize & Alignment Control Toolbar */}
+      {selectedImage && activeTab === "visual" && (
+        <div className="sticky top-2 z-20 mx-4 my-2 p-2 bg-slate-900 text-white rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-2 border border-gold/40 text-xs animate-fadeIn">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-gold flex items-center gap-1 mr-1">
+              <Maximize2 className="w-3.5 h-3.5" /> Co giãn ảnh:
+            </span>
+            <button
+              type="button"
+              onClick={() => resizeSelectedImage("25%")}
+              className="px-2 py-0.5 bg-slate-800 hover:bg-navy-dark rounded text-[11px] font-bold border border-slate-700"
+            >
+              25% (Nhỏ)
+            </button>
+            <button
+              type="button"
+              onClick={() => resizeSelectedImage("50%")}
+              className="px-2 py-0.5 bg-slate-800 hover:bg-navy-dark rounded text-[11px] font-bold border border-slate-700"
+            >
+              50% (Vừa)
+            </button>
+            <button
+              type="button"
+              onClick={() => resizeSelectedImage("75%")}
+              className="px-2 py-0.5 bg-slate-800 hover:bg-navy-dark rounded text-[11px] font-bold border border-slate-700"
+            >
+              75% (Lớn)
+            </button>
+            <button
+              type="button"
+              onClick={() => resizeSelectedImage("100%")}
+              className="px-2 py-0.5 bg-slate-800 hover:bg-navy-dark rounded text-[11px] font-bold border border-slate-700"
+            >
+              100% (Đầy khung)
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-300 mr-1">Vị trí:</span>
+            <button
+              type="button"
+              onClick={() => alignSelectedImage("left")}
+              className="p-1 bg-slate-800 hover:bg-navy-dark rounded border border-slate-700"
+              title="Căn trái (Chữ bao quanh)"
+            >
+              <AlignLeft className="w-3.5 h-3.5 text-white" />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelectedImage("center")}
+              className="p-1 bg-slate-800 hover:bg-navy-dark rounded border border-slate-700"
+              title="Căn giữa"
+            >
+              <AlignCenter className="w-3.5 h-3.5 text-white" />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelectedImage("right")}
+              className="p-1 bg-slate-800 hover:bg-navy-dark rounded border border-slate-700"
+              title="Căn phải"
+            >
+              <AlignRight className="w-3.5 h-3.5 text-white" />
+            </button>
+            
+            <div className="h-4 w-px bg-slate-700 mx-1" />
+
+            <button
+              type="button"
+              onClick={deleteSelectedImage}
+              className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-bold flex items-center gap-1"
+              title="Xóa ảnh khỏi bài viết"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Xóa ảnh</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SINGLE CONTAINER DISPLAYED AT ANY ONE TIME */}
       {activeTab === "visual" ? (
@@ -442,7 +593,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
                 onChange(visualEditorRef.current.innerHTML);
               }
             }}
-            className="min-h-[420px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-3 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline text-justify"
+            className="min-h-[450px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-img:cursor-pointer prose-a:text-navy prose-a:underline text-justify"
             suppressContentEditableWarning
           />
         </div>

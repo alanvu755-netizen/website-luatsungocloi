@@ -140,9 +140,10 @@ export default async function PublicSubmenuArticleDetailPage({
         />
 
         {/* Article Content Body */}
-        <div className="py-8 prose max-w-none text-slate-800 text-base leading-relaxed whitespace-pre-line font-sans">
-          {article.content}
-        </div>
+        <div
+          className="py-8 prose max-w-none text-slate-800 text-base leading-relaxed font-sans prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-5 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline text-justify"
+          dangerouslySetInnerHTML={{ __html: article.content || "" }}
+        />
 
         {/* Multi-Practice Area Tags (N-N Junction Display) */}
         {articlePracticeAreas.length > 0 && (

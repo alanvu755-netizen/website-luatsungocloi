@@ -158,6 +158,48 @@ export const getPublicArticleBySlug = memoize(
   }
 );
 
+export function slugify(str: string): string {
+  if (!str) return "bai-viet";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .replace(/([^0-9a-z-\s])/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "") || "bai-viet";
+}
+
+export async function ensureUniqueSlug(
+  siteId: string,
+  baseSlug: string,
+  currentArticleId?: string
+): Promise<string> {
+  const cleanBase = slugify(baseSlug);
+  let candidateSlug = cleanBase;
+  let counter = 1;
+
+  while (true) {
+    const existing = await prisma.article.findFirst({
+      where: {
+        siteId,
+        slug: candidateSlug,
+        ...(currentArticleId ? { NOT: { id: currentArticleId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return candidateSlug;
+    }
+
+    candidateSlug = `${cleanBase}-${counter}`;
+    counter++;
+  }
+}
+
 export async function createArticle(
   siteId: string,
   createdById: string,
@@ -166,7 +208,7 @@ export async function createArticle(
     submenuId?: string | null;
     practiceAreaIds?: string[];
     title: string;
-    slug: string;
+    slug?: string;
     excerpt?: string | null;
     content: string;
     thumbnailUrl?: string | null;
@@ -177,6 +219,7 @@ export async function createArticle(
   }
 ) {
   const isPublishing = data.status === "PUBLISHED";
+  const uniqueSlug = await ensureUniqueSlug(siteId, data.slug || data.title);
 
   const result = await prisma.article.create({
     data: {
@@ -185,7 +228,7 @@ export async function createArticle(
       menuId: data.menuId,
       submenuId: data.submenuId || null,
       title: data.title,
-      slug: data.slug,
+      slug: uniqueSlug,
       excerpt: data.excerpt,
       content: data.content,
       thumbnailUrl: data.thumbnailUrl,
@@ -235,10 +278,19 @@ export async function updateArticle(
 
   const { practiceAreaIds, ...articleFields } = data;
 
+  // Guarantee unique slug if slug or title is updated
+  let targetSlug = existing.slug;
+  if (data.slug && data.slug.trim() !== "") {
+    targetSlug = await ensureUniqueSlug(siteId, data.slug, id);
+  } else if (data.title && data.title !== existing.title && !data.slug) {
+    targetSlug = await ensureUniqueSlug(siteId, data.title, id);
+  }
+
   const result = await prisma.article.update({
     where: { id, siteId },
     data: {
       ...articleFields,
+      slug: targetSlug,
       publishedAt: willBePublished ? new Date() : existing.publishedAt,
     },
   });

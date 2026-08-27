@@ -14,6 +14,55 @@ import ArticleEngagement from "@/components/public/ArticleEngagement";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Helper function to convert raw text / unformatted text into publication-ready HTML
+function formatArticleContentToHtml(rawContent: string): string {
+  if (!rawContent) return "";
+  const trimmed = rawContent.trim();
+  
+  // If already contains structured HTML paragraph/header tags, return as is
+  if (trimmed.includes("<p>") || trimmed.includes("<h2>") || trimmed.includes("<h3>") || trimmed.includes("<blockquote")) {
+    return trimmed;
+  }
+
+  // Split by double newlines or single newlines
+  const blocks = trimmed.split(/\n\s*\n|\n/);
+  const htmlParts: string[] = [];
+
+  for (const block of blocks) {
+    const text = block.trim();
+    if (!text) continue;
+
+    // Check for Main Title / Section 1, 2, 3
+    if (/^(3 Tình Huống|1\. |2\. |3\. |4\. |5\. |\d+\. ĐẶT VẤN ĐỀ|\d+\. CÁC TÌNH HUỐNG|Phân Tích Pháp Lý|Những Rủi Ro|Phân Tích Những Điểm Mới|Hướng Dẫn Quy Trình)/i.test(text) && text.length < 120) {
+      htmlParts.push(`<h2 class="text-xl font-serif font-bold text-navy mt-6 mb-3 border-b border-slate-200 pb-2">${text}</h2>`);
+    }
+    // Check for Subsection / Bullet subheadings (• Tình huống 1, - Nguy cơ, - Vai trò Luật sư)
+    else if (/^(•|-[ ]*Nguy cơ|- Vai trò|- Căn cứ|Tình huống \d+:|Bước \d+:|Danh mục hồ sơ)/i.test(text)) {
+      if (text.startsWith("•") || text.startsWith("-")) {
+        const cleanText = text.replace(/^[•-]\s*/, "");
+        htmlParts.push(`<h3 class="text-lg font-serif font-semibold text-slate-900 mt-4 mb-2">▪ ${cleanText}</h3>`);
+      } else {
+        htmlParts.push(`<h3 class="text-lg font-serif font-semibold text-slate-900 mt-4 mb-2">${text}</h3>`);
+      }
+    }
+    // Check for Lawyer Advice / Quote block
+    else if (/^(Lời khuyên|Đồng hành|Tư vấn chuyên sâu|📞 Liên hệ)/i.test(text)) {
+      htmlParts.push(`
+        <blockquote class="border-l-4 border-gold bg-amber-50/60 p-4 my-6 italic text-slate-800 rounded-r-xl shadow-xs">
+          <strong class="text-navy not-italic block mb-1 font-serif">⚖️ Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi:</strong>
+          ${text}
+        </blockquote>
+      `);
+    }
+    // Standard Paragraph
+    else {
+      htmlParts.push(`<p class="my-4 text-justify leading-relaxed text-slate-800">${text}</p>`);
+    }
+  }
+
+  return htmlParts.join("\n");
+}
+
 export async function generateStaticParams() {
   const site = await getSiteBySlug("le-thi-ngoc-loi");
   if (!site) return [];
@@ -59,6 +108,8 @@ export default async function PublicSubmenuArticleDetailPage({
 
   const article = await getPublicArticleBySlug(site.id, menuSlug, articleSlug, submenuSlug);
   if (!article || article.status !== "PUBLISHED") notFound();
+
+  const formattedHtml = formatArticleContentToHtml(article.content);
 
   const [enabledChannels, articlePracticeAreas, relatedArticles] = await Promise.all([
     getEnabledContactChannels(site.id),
@@ -141,8 +192,8 @@ export default async function PublicSubmenuArticleDetailPage({
 
         {/* Article Content Body */}
         <div
-          className="py-8 prose max-w-none text-slate-800 text-base leading-relaxed font-sans prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-5 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline text-justify"
-          dangerouslySetInnerHTML={{ __html: article.content || "" }}
+          className="py-8 prose max-w-none text-slate-800 text-base leading-relaxed font-sans prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-5 prose-h3:mb-2 prose-p:my-4 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline text-justify space-y-4"
+          dangerouslySetInnerHTML={{ __html: formattedHtml || article.content || "" }}
         />
 
         {/* Multi-Practice Area Tags (N-N Junction Display) */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle, AlignLeft, AlignCenter, AlignRight, AlignJustify, Trash2, Maximize2 } from "lucide-react";
+import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle, AlignLeft, AlignCenter, AlignRight, AlignJustify, Trash2, Maximize2, Sparkles, Wand2 } from "lucide-react";
 
 interface RichArticleEditorProps {
   content: string;
@@ -13,6 +13,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
+  const [dragOverActive, setDragOverActive] = useState(false);
 
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,38 +46,140 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
     }
   };
 
-  // Listen for global click on images inside visual editor
+  // Setup HTML5 Drag & Drop for reordering images and dropping files into editor
   useEffect(() => {
+    const editor = visualEditorRef.current;
+    if (!editor) return;
+
+    // Make all images draggable
+    const updateImagesDraggable = () => {
+      const imgs = editor.querySelectorAll("img");
+      imgs.forEach((img) => {
+        img.setAttribute("draggable", "true");
+      });
+    };
+    updateImagesDraggable();
+
+    // Image click handler
     const handleEditorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target && target.tagName === "IMG" && visualEditorRef.current?.contains(target)) {
+      if (target && target.tagName === "IMG" && editor.contains(target)) {
         setSelectedImage(target as HTMLImageElement);
       } else {
         setSelectedImage(null);
       }
     };
 
-    const currentRef = visualEditorRef.current;
-    if (currentRef) {
-      currentRef.addEventListener("click", handleEditorClick);
-    }
-    return () => {
-      if (currentRef) {
-        currentRef.removeEventListener("click", handleEditorClick);
+    // Dragover handler to calculate caret drop position
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      setDragOverActive(true);
+
+      // Get caret position from mouse coordinates
+      if (document.caretRangeFromPoint) {
+        const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+        if (range && editor.contains(range.commonAncestorContainer)) {
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+            savedRangeRef.current = range.cloneRange();
+          }
+        }
       }
     };
-  }, [activeTab]);
+
+    const handleDragLeave = () => {
+      setDragOverActive(false);
+    };
+
+    // Drop handler
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      setDragOverActive(false);
+
+      // Case A: Dropped image files from desktop
+      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith("image/")) {
+          const formData = new FormData();
+          formData.append("file", file);
+          setUploading(true);
+
+          try {
+            const res = await fetch("/api/admin/upload", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            if (data.url && editor) {
+              const cleanAlt = file.name.replace(/["']/g, "").slice(0, 100);
+              const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" style="width: 80%; max-width: 100%; height: auto; resize: both; cursor: pointer;" class="rounded-xl mx-auto shadow-md border border-slate-200" draggable="true" /></p>`;
+              restoreCursorSelection();
+              document.execCommand("insertHTML", false, imgHtml);
+              onChange(editor.innerHTML);
+              setFeedback({ type: "success", message: `✓ Đã chèn ảnh thả thành công: ${file.name}` });
+            }
+          } catch (err: any) {
+            setFeedback({ type: "error", message: "Lỗi khi thả ảnh." });
+          } finally {
+            setUploading(false);
+          }
+        }
+      }
+    };
+
+    editor.addEventListener("click", handleEditorClick);
+    editor.addEventListener("dragover", handleDragOver);
+    editor.addEventListener("dragleave", handleDragLeave);
+    editor.addEventListener("drop", handleDrop);
+
+    return () => {
+      editor.removeEventListener("click", handleEditorClick);
+      editor.removeEventListener("dragover", handleDragOver);
+      editor.removeEventListener("dragleave", handleDragLeave);
+      editor.removeEventListener("drop", handleDrop);
+    };
+  }, [activeTab, content]);
 
   // Format unformatted raw text into proper HTML paragraph blocks (<p>)
   const formatRawToHtmlParagraphs = (raw: string) => {
     if (!raw) return "";
-    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div") || raw.trim().startsWith("<blockquote")) {
-      return raw;
+    const trimmed = raw.trim();
+    if (trimmed.includes("<p>") || trimmed.includes("<h2>") || trimmed.includes("<h3>") || trimmed.includes("<blockquote")) {
+      return trimmed;
     }
-    return raw
-      .split(/\n\s*\n/)
-      .map((para) => `<p>${para.replace(/\n/g, "<br/>")}</p>`)
-      .join("");
+
+    const blocks = trimmed.split(/\n\s*\n|\n/);
+    const htmlParts: string[] = [];
+
+    for (const block of blocks) {
+      const text = block.trim();
+      if (!text) continue;
+
+      if (/^(3 Tình Huống|1\. |2\. |3\. |4\. |5\. |\d+\. ĐẶT VẤN ĐỀ|\d+\. CÁC TÌNH HUỐNG|Phân Tích Pháp Lý|Những Rủi Ro|Phân Tích Những Điểm Mới|Hướng Dẫn Quy Trình)/i.test(text) && text.length < 120) {
+        htmlParts.push(`<h2>${text}</h2>`);
+      } else if (/^(•|-[ ]*Nguy cơ|- Vai trò|- Căn cứ|Tình huống \d+:|Bước \d+:|Danh mục hồ sơ)/i.test(text)) {
+        htmlParts.push(`<h3>${text}</h3>`);
+      } else if (/^(Lời khuyên|Đồng hành|Tư vấn chuyên sâu|📞 Liên hệ)/i.test(text)) {
+        htmlParts.push(`<blockquote class="border-l-4 border-gold bg-amber-50/50 p-4 italic my-4 text-slate-800 rounded-r-lg"><strong>⚖️ Lời khuyên từ Luật sư – Thạc sĩ Lê Thị Ngọc Lợi:</strong><br/>${text}</blockquote>`);
+      } else {
+        htmlParts.push(`<p class="my-4 text-justify leading-relaxed">${text}</p>`);
+      }
+    }
+
+    return htmlParts.join("\n");
+  };
+
+  // Auto-format HTML trigger button
+  const handleAutoFormatArticle = () => {
+    const formatted = formatRawToHtmlParagraphs(content);
+    if (visualEditorRef.current) {
+      visualEditorRef.current.innerHTML = formatted;
+    }
+    onChange(formatted);
+    setFeedback({ type: "success", message: "✨ Đã tự động chuẩn hóa định dạng & giãn khoảng cách đoạn văn bài viết!" });
+    setTimeout(() => setFeedback(null), 4000);
   };
 
   // Sync content with Visual contentEditable container when switching tabs or updating prop
@@ -214,8 +317,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       }
 
       const cleanAlt = file.name.replace(/["']/g, "").slice(0, 100);
-      // Interactive resizable image HTML tag with resize handle styling
-      const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" style="width: 80%; max-width: 100%; height: auto; resize: both; cursor: pointer;" class="rounded-xl mx-auto shadow-md border border-slate-200" /></p>`;
+      const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" style="width: 80%; max-width: 100%; height: auto; resize: both; cursor: pointer;" class="rounded-xl mx-auto shadow-md border border-slate-200" draggable="true" /></p>`;
 
       if (activeTab === "visual" && visualEditorRef.current) {
         restoreCursorSelection();
@@ -300,6 +402,17 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
               <span>💻 Mã HTML</span>
             </button>
           </div>
+
+          {/* Auto Format Helper Button */}
+          <button
+            type="button"
+            onClick={handleAutoFormatArticle}
+            className="px-2.5 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg flex items-center gap-1 shadow-xs transition-all mr-1"
+            title="Tự động chuẩn hóa định dạng & giãn khoảng cách đoạn văn bài viết"
+          >
+            <Wand2 className="w-3.5 h-3.5 text-white" />
+            <span>✨ Chuẩn hóa Định dạng</span>
+          </button>
 
           {/* Typography Selector */}
           <select
@@ -575,7 +688,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       {/* SINGLE CONTAINER DISPLAYED AT ANY ONE TIME */}
       {activeTab === "visual" ? (
         /* MODE A: VISUAL RICH EDITOR CONTAINER ONLY */
-        <div className="p-4 bg-white">
+        <div className={`p-4 bg-white transition-all ${dragOverActive ? "bg-amber-50/40 border-2 border-dashed border-gold" : ""}`}>
           <div
             ref={visualEditorRef}
             contentEditable
@@ -593,7 +706,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
                 onChange(visualEditorRef.current.innerHTML);
               }
             }}
-            className="min-h-[450px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-img:cursor-pointer prose-a:text-navy prose-a:underline text-justify"
+            className="min-h-[450px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-4 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-4 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-img:cursor-pointer prose-a:text-navy prose-a:underline text-justify space-y-4"
             suppressContentEditableWarning
           />
         </div>

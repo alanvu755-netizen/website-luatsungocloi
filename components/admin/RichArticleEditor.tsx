@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle } from "lucide-react";
+import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 
 interface RichArticleEditorProps {
   content: string;
@@ -15,14 +15,42 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+
+  // Save active cursor position/selection in Visual Editor
+  const saveCursorSelection = () => {
+    if (typeof window !== "undefined") {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        // Ensure range is within visual editor container
+        if (visualEditorRef.current && visualEditorRef.current.contains(range.commonAncestorContainer)) {
+          savedRangeRef.current = range;
+        }
+      }
+    }
+  };
+
+  // Restore cursor position/selection
+  const restoreCursorSelection = () => {
+    if (typeof window !== "undefined" && visualEditorRef.current) {
+      visualEditorRef.current.focus();
+      if (savedRangeRef.current) {
+        const sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(savedRangeRef.current);
+        }
+      }
+    }
+  };
 
   // Format unformatted raw text into proper HTML paragraph blocks (<p>)
   const formatRawToHtmlParagraphs = (raw: string) => {
     if (!raw) return "";
-    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div>")) {
+    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div")) {
       return raw;
     }
-    // Split by double newlines or single newlines
     return raw
       .split(/\n\s*\n/)
       .map((para) => `<p>${para.replace(/\n/g, "<br/>")}</p>`)
@@ -42,8 +70,9 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   // Execute formatting command in Visual Mode
   const execCommand = (command: string, value: string | undefined = undefined) => {
     if (activeTab === "visual" && visualEditorRef.current) {
-      visualEditorRef.current.focus();
+      restoreCursorSelection();
       document.execCommand(command, false, value);
+      saveCursorSelection();
       onChange(visualEditorRef.current.innerHTML);
     } else if (activeTab === "code" && codeTextareaRef.current) {
       const textarea = codeTextareaRef.current;
@@ -56,20 +85,23 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       if (command === "italic") replacement = `<i>${selected}</i>`;
       if (command === "underline") replacement = `<u>${selected}</u>`;
       if (command === "strikeThrough") replacement = `<s>${selected}</s>`;
+      if (command === "justifyLeft") replacement = `<p style="text-align: left">${selected}</p>`;
+      if (command === "justifyCenter") replacement = `<p style="text-align: center">${selected}</p>`;
+      if (command === "justifyRight") replacement = `<p style="text-align: right">${selected}</p>`;
+      if (command === "justifyFull") replacement = `<p style="text-align: justify">${selected}</p>`;
       if (command === "formatBlock" && value === "h2") replacement = `<h2>${selected}</h2>`;
       if (command === "formatBlock" && value === "h3") replacement = `<h3>${selected}</h3>`;
       if (command === "formatBlock" && value === "p") replacement = `<p>${selected}</p>`;
       if (command === "formatBlock" && value === "blockquote") replacement = `<blockquote class="border-l-4 border-gold bg-amber-50/50 p-3 italic my-3 text-slate-800">${selected}</blockquote>`;
       if (command === "insertUnorderedList") replacement = `<ul><li>${selected}</li></ul>`;
       if (command === "insertOrderedList") replacement = `<ol><li>${selected}</li></ol>`;
-      if (command === "insertHorizontalRule") replacement = `<hr class="my-4 border-slate-300"/>`;
 
       const updated = content.substring(0, start) + replacement + content.substring(end);
       onChange(updated);
     }
   };
 
-  // Upload Image Handler
+  // Upload Image Handler with Exact Cursor Position Restoration
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -115,8 +147,9 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" class="max-w-full h-auto rounded-xl mx-auto shadow-md border border-slate-200" /></p>`;
 
       if (activeTab === "visual" && visualEditorRef.current) {
-        visualEditorRef.current.focus();
+        restoreCursorSelection();
         document.execCommand("insertHTML", false, imgHtml);
+        saveCursorSelection();
         onChange(visualEditorRef.current.innerHTML);
       } else {
         onChange(content + `\n${imgHtml}\n`);
@@ -124,7 +157,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
       setFeedback({
         type: "success",
-        message: `✓ Đã chèn ảnh thành công: ${file.name}`,
+        message: `✓ Đã chèn ảnh thành công tại vị trí con trỏ: ${file.name}`,
       });
 
       setTimeout(() => setFeedback(null), 4000);
@@ -257,6 +290,45 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <div className="h-4 w-px bg-slate-300 mx-1" />
 
+          {/* Alignment Tools (Căn lề chuẩn Pháp lý) */}
+          <button
+            type="button"
+            onClick={() => execCommand("justifyFull")}
+            className="p-1.5 rounded hover:bg-slate-200 text-navy font-bold transition-colors bg-slate-200/60"
+            title="≡ Căn đều 2 bên (Justify - Chuẩn Luật sư)"
+          >
+            <AlignJustify className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => execCommand("justifyLeft")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="⇐ Căn trái (Align Left)"
+          >
+            <AlignLeft className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => execCommand("justifyCenter")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="⇔ Căn giữa (Align Center)"
+          >
+            <AlignCenter className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => execCommand("justifyRight")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="⇒ Căn phải (Align Right)"
+          >
+            <AlignRight className="w-4 h-4" />
+          </button>
+
+          <div className="h-4 w-px bg-slate-300 mx-1" />
+
           {/* Headers & Blockquotes */}
           <button
             type="button"
@@ -308,15 +380,6 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
           <button
             type="button"
-            onClick={() => execCommand("insertHorizontalRule")}
-            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
-            title="Đường phân cách (Horizontal Rule)"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
             onClick={handleInsertLink}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
             title="Chèn đường dẫn (Link)"
@@ -325,7 +388,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           </button>
         </div>
 
-        {/* Right Section: Image Upload Button & Feedback */}
+        {/* Right Section: Image Upload Button with Cursor Save */}
         <div className="flex items-center gap-2">
           {feedback && (
             <span
@@ -340,13 +403,17 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             </span>
           )}
 
-          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-navy hover:bg-navy-dark text-white font-bold text-xs rounded-lg shadow-xs transition-all">
+          <label
+            onClick={saveCursorSelection}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-navy hover:bg-navy-dark text-white font-bold text-xs rounded-lg shadow-xs transition-all"
+          >
             <Upload className="w-3.5 h-3.5 text-gold" />
             <span>{uploading ? "Đang tải ảnh..." : "📤 🖼️ Tải & Chèn ảnh từ máy tính"}</span>
             <input
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
               disabled={uploading}
+              onFocus={saveCursorSelection}
               onChange={handleImageUpload}
               className="hidden"
             />
@@ -361,7 +428,11 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           <div
             ref={visualEditorRef}
             contentEditable
+            onMouseUp={saveCursorSelection}
+            onKeyUp={saveCursorSelection}
+            onFocus={saveCursorSelection}
             onInput={() => {
+              saveCursorSelection();
               if (visualEditorRef.current) {
                 onChange(visualEditorRef.current.innerHTML);
               }
@@ -371,7 +442,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
                 onChange(visualEditorRef.current.innerHTML);
               }
             }}
-            className="min-h-[400px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-3 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline"
+            className="min-h-[420px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-p:text-justify prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-3 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline text-justify"
             suppressContentEditableWarning
           />
         </div>
@@ -384,7 +455,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             value={content}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Chỉnh sửa mã nguồn HTML..."
-            className="w-full p-4 border border-slate-800 rounded-lg text-xs leading-relaxed font-mono focus:ring-2 focus:ring-gold focus:outline-none bg-slate-900 text-emerald-400"
+            className="w-full p-4 border border-slate-800 rounded-lg text-xs leading-relaxed font-mono focus:ring-2 focus:ring-gold focus:outline-none bg-slate-900 text-emerald-400 text-left"
           />
         </div>
       )}

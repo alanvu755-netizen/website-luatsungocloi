@@ -124,12 +124,32 @@ export default function ArticleEditorToolbar({ content, onChange, textareaRef }:
         {/* List */}
         <button
           type="button"
-          onClick={() => insertTextAtCursor("<ul>\n  <li>", "</li>\n</ul>")}
+          onClick={() => insertTextAtCursor("\n- ", "")}
           className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
-          title="Danh sách dấu chấm (List)"
+          title="Danh sách gạch đầu dòng"
         >
           <List className="w-4 h-4" />
         </button>
+
+        {/* Clean Base64 Helper Button */}
+        {content.includes("data:image/") || /gCwB1AI|iVBORw0KGgo/i.test(content) ? (
+          <button
+            type="button"
+            onClick={() => {
+              const cleaned = content
+                .replace(/<img[^>]*src=["']data:image\/[^"']+["'][^>]*>/gi, "")
+                .replace(/data:image\/[a-zA-Z]+;base64,[a-zA-Z0-9+/=]+/gi, "")
+                .replace(/(?:[A-Za-z0-9+/]{100,}=*)/g, "");
+              onChange(cleaned.trim());
+              setFeedback("✓ Đã quét dọn và làm sạch toàn bộ chuỗi mã hóa ảnh cũ!");
+              setTimeout(() => setFeedback(null), 4000);
+            }}
+            className="px-2.5 py-1 bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-semibold rounded flex items-center gap-1 border border-amber-300 transition-all"
+            title="Xóa nhanh chuỗi mã hóa ảnh Base64 cũ khỏi trình soạn thảo"
+          >
+            <span>🧹 Xóa mã ảnh cũ</span>
+          </button>
+        ) : null}
       </div>
 
       {/* Upload Image Action */}

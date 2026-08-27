@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Sparkles, Save, CheckCircle, AlertCircle, Check, RefreshCw, RotateCcw, X } from "lucide-react";
 import RichArticleEditor from "@/components/admin/RichArticleEditor";
+import { stripHtmlTags } from "@/lib/utils/string";
 
 interface Submenu {
   id: string;
@@ -156,35 +157,34 @@ export default function EditArticlePage() {
       if (!confirmReplace) return;
     }
 
+    const plainText = stripHtmlTags(aiDraft);
     const lines = aiDraft.split("\n").filter((l) => l.trim() !== "");
-    let extractedTitle = "";
-    if (lines.length > 0) {
-      extractedTitle = lines[0]
-        .replace(/^#+\s*/, "")
-        .replace(/^\[.*?\]\s*/, "")
-        .replace(/^tư vấn pháp luật:\s*/i, "")
-        .replace(/^bài viết tư vấn pháp lý:\s*/i, "")
-        .replace(/^giải đáp pháp luật:\s*/i, "")
-        .replace(/^cảnh báo rủi ro pháp lý:\s*/i, "")
-        .replace(/^phổ biến kiến thức pháp luật:\s*/i, "")
-        .replace(/^phân tích điểm mới pháp luật:\s*/i, "")
-        .replace(/^hướng dẫn từng bước xử lý:\s*/i, "")
-        .replace(/^giải pháp pháp lý chuyên sâu:\s*/i, "")
-        .replace(/^tiêu đề:\s*/i, "")
-        .replace(/^[-*:]+\s*/, "")
-        .trim();
-    }
+    let rawTitleLine = lines.length > 0 ? lines[0] : "";
+    let cleanExtractedTitle = stripHtmlTags(rawTitleLine)
+      .replace(/^#+\s*/, "")
+      .replace(/^\[.*?\]\s*/, "")
+      .replace(/^tư vấn pháp luật:\s*/i, "")
+      .replace(/^bài viết tư vấn pháp lý:\s*/i, "")
+      .replace(/^giải đáp pháp luật:\s*/i, "")
+      .replace(/^cảnh báo rủi ro pháp lý:\s*/i, "")
+      .replace(/^phổ biến kiến thức pháp luật:\s*/i, "")
+      .replace(/^phân tích điểm mới pháp luật:\s*/i, "")
+      .replace(/^hướng dẫn từng bước xử lý:\s*/i, "")
+      .replace(/^giải pháp pháp lý chuyên sâu:\s*/i, "")
+      .replace(/^tiêu đề:\s*/i, "")
+      .replace(/^[-*:]+\s*/, "")
+      .trim();
 
     if (aiTopicInput && aiTopicInput.trim() !== "") {
-      setTitle(aiTopicInput.trim());
-    } else if (extractedTitle && extractedTitle.length > 5 && !title) {
-      setTitle(extractedTitle);
+      setTitle(stripHtmlTags(aiTopicInput).trim());
+    } else if (cleanExtractedTitle && cleanExtractedTitle.length > 5 && !title) {
+      setTitle(cleanExtractedTitle);
     }
 
     setContent(aiDraft);
-    if (!excerpt) setExcerpt(aiDraft.slice(0, 180) + "...");
-    if (!seoTitle) setSeoTitle(title || "Tư vấn Pháp luật | Luật sư Lê Thị Ngọc Lợi");
-    if (!metaDescription) setMetaDescription(aiDraft.slice(0, 150));
+    if (!excerpt) setExcerpt(plainText.slice(0, 180) + "...");
+    if (!seoTitle) setSeoTitle(cleanExtractedTitle || title || "Tư vấn Pháp luật | Luật sư Lê Thị Ngọc Lợi");
+    if (!metaDescription) setMetaDescription(plainText.slice(0, 155));
     setAiUsed(true);
     setTimeout(() => setAiUsed(false), 3000);
   };

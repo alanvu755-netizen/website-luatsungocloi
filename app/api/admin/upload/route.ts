@@ -40,22 +40,21 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const mimeType = file.type || "image/png";
+    const cloudFile = new File([buffer], file.name, { type: mimeType });
 
-    // 1. Primary Permanent Storage Strategy: Cloud Storage CDN (Catbox Permanent Image Storage)
-    // Uses Node.js File API for guaranteed multipart serialization on Vercel Serverless.
+    // 1. Primary Cloud Provider: Catbox Permanent Cloud Storage
     try {
-      const cloudFormData = new FormData();
-      cloudFormData.append("reqtype", "fileupload");
-      const cloudFile = new File([buffer], file.name, { type: mimeType });
-      cloudFormData.append("fileToUpload", cloudFile);
+      const catboxData = new FormData();
+      catboxData.append("reqtype", "fileupload");
+      catboxData.append("fileToUpload", cloudFile);
 
-      const cloudRes = await fetch("https://catbox.moe/user/api.php", {
+      const catboxRes = await fetch("https://catbox.moe/user/api.php", {
         method: "POST",
-        body: cloudFormData,
+        body: catboxData,
       });
 
-      if (cloudRes.ok) {
-        const textUrl = (await cloudRes.text()).trim();
+      if (catboxRes.ok) {
+        const textUrl = (await catboxRes.text()).trim();
         if (textUrl.startsWith("http://") || textUrl.startsWith("https://")) {
           return NextResponse.json({
             success: true,
@@ -64,11 +63,36 @@ export async function POST(req: NextRequest) {
           });
         }
       }
-    } catch (cloudErr: any) {
-      console.warn("Cloud CDN upload failed, attempting local filesystem fallback...", cloudErr.message);
+    } catch (catboxErr: any) {
+      console.warn("Catbox CDN failed, attempting secondary cloud provider...", catboxErr.message);
     }
 
-    // 2. Secondary Strategy for Local Development: Save to public/uploads
+    // 2. Secondary Cloud Provider: Tmpfiles CDN Engine
+    try {
+      const tmpFormData = new FormData();
+      tmpFormData.append("file", cloudFile);
+
+      const tmpRes = await fetch("https://tmpfiles.org/api/v1/upload", {
+        method: "POST",
+        body: tmpFormData,
+      });
+
+      if (tmpRes.ok) {
+        const tmpJson = await tmpRes.json();
+        if (tmpJson.status === "success" && tmpJson.data?.url) {
+          const directUrl = tmpJson.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+          return NextResponse.json({
+            success: true,
+            url: directUrl,
+            fileName: file.name,
+          });
+        }
+      }
+    } catch (tmpErr: any) {
+      console.warn("Tmpfiles CDN failed:", tmpErr.message);
+    }
+
+    // 3. Local Development Fallback: Save to public/uploads
     if (!process.env.VERCEL) {
       try {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");

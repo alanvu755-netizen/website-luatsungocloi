@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload, Bold, Italic, Heading2, Heading3, List, Check, Eye, Code, Link as LinkIcon, AlertCircle, ImageIcon } from "lucide-react";
+import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Minus, Eye, Code, Link as LinkIcon, Check, AlertCircle } from "lucide-react";
 
 interface RichArticleEditorProps {
   content: string;
@@ -12,15 +12,29 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
   const [activeTab, setActiveTab] = useState<"visual" | "code">("visual");
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  
+
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Keep Visual contentEditable container in sync with props when switching tabs
+  // Format unformatted raw text into proper HTML paragraph blocks (<p>)
+  const formatRawToHtmlParagraphs = (raw: string) => {
+    if (!raw) return "";
+    if (raw.trim().startsWith("<p>") || raw.trim().startsWith("<h2>") || raw.trim().startsWith("<h3>") || raw.trim().startsWith("<div>")) {
+      return raw;
+    }
+    // Split by double newlines or single newlines
+    return raw
+      .split(/\n\s*\n/)
+      .map((para) => `<p>${para.replace(/\n/g, "<br/>")}</p>`)
+      .join("");
+  };
+
+  // Sync content with Visual contentEditable container when switching tabs or updating prop
   useEffect(() => {
     if (activeTab === "visual" && visualEditorRef.current) {
-      if (visualEditorRef.current.innerHTML !== content) {
-        visualEditorRef.current.innerHTML = content || "";
+      const formatted = formatRawToHtmlParagraphs(content);
+      if (visualEditorRef.current.innerHTML !== formatted) {
+        visualEditorRef.current.innerHTML = formatted;
       }
     }
   }, [activeTab, content]);
@@ -40,9 +54,15 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
       if (command === "bold") replacement = `<b>${selected}</b>`;
       if (command === "italic") replacement = `<i>${selected}</i>`;
+      if (command === "underline") replacement = `<u>${selected}</u>`;
+      if (command === "strikeThrough") replacement = `<s>${selected}</s>`;
       if (command === "formatBlock" && value === "h2") replacement = `<h2>${selected}</h2>`;
       if (command === "formatBlock" && value === "h3") replacement = `<h3>${selected}</h3>`;
-      if (command === "insertUnorderedList") replacement = `\n- ${selected}\n`;
+      if (command === "formatBlock" && value === "p") replacement = `<p>${selected}</p>`;
+      if (command === "formatBlock" && value === "blockquote") replacement = `<blockquote class="border-l-4 border-gold bg-amber-50/50 p-3 italic my-3 text-slate-800">${selected}</blockquote>`;
+      if (command === "insertUnorderedList") replacement = `<ul><li>${selected}</li></ul>`;
+      if (command === "insertOrderedList") replacement = `<ol><li>${selected}</li></ol>`;
+      if (command === "insertHorizontalRule") replacement = `<hr class="my-4 border-slate-300"/>`;
 
       const updated = content.substring(0, start) + replacement + content.substring(end);
       onChange(updated);
@@ -92,7 +112,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
       }
 
       const cleanAlt = file.name.replace(/["']/g, "").slice(0, 100);
-      const imgHtml = `<p><img src="${data.url}" alt="${cleanAlt}" class="w-full h-auto rounded-xl my-4 shadow-sm" /></p>`;
+      const imgHtml = `<p class="text-center my-4"><img src="${data.url}" alt="${cleanAlt}" class="max-w-full h-auto rounded-xl mx-auto shadow-md border border-slate-200" /></p>`;
 
       if (activeTab === "visual" && visualEditorRef.current) {
         visualEditorRef.current.focus();
@@ -133,12 +153,13 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
 
   return (
     <div className="border border-slate-300 rounded-xl overflow-hidden shadow-xs bg-white space-y-0">
-      {/* Top Toolbar */}
+      {/* Professional Formatting Toolbar */}
       <div className="bg-slate-100 border-b border-slate-300 p-2.5 flex flex-wrap items-center justify-between gap-2">
         
-        {/* Left: Mode Switcher & Formatting Tools */}
-        <div className="flex items-center flex-wrap gap-1.5">
-          {/* Tab Switcher: Only 1 Mode Selected at a Time */}
+        {/* Left Section: Mode Tabs & Full Formatting Toolbar */}
+        <div className="flex items-center flex-wrap gap-1">
+          
+          {/* Mode Switcher: ONLY 1 MODE VISIBLE AT A TIME */}
           <div className="bg-slate-200 p-0.5 rounded-lg flex items-center gap-0.5 border border-slate-300 mr-2">
             <button
               type="button"
@@ -176,7 +197,28 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             </button>
           </div>
 
-          {/* Formatting Buttons */}
+          {/* Typography Selector */}
+          <select
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                execCommand("formatBlock", val);
+                e.target.value = "";
+              }
+            }}
+            className="px-2 py-1 text-xs font-semibold bg-white border border-slate-300 rounded hover:border-slate-400 focus:outline-none text-slate-700 mr-1"
+            defaultValue=""
+          >
+            <option value="" disabled>Kiểu đoạn văn</option>
+            <option value="p">Đoạn văn tiêu chuẩn (p)</option>
+            <option value="h2">Tiêu đề chính H2</option>
+            <option value="h3">Tiêu đề phụ H3</option>
+            <option value="blockquote">Trích dẫn Pháp lý</option>
+          </select>
+
+          <div className="h-4 w-px bg-slate-300 mx-1" />
+
+          {/* Text Formatting */}
           <button
             type="button"
             onClick={() => execCommand("bold")}
@@ -195,12 +237,31 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             <Italic className="w-4 h-4" />
           </button>
 
-          <div className="h-4 w-px bg-slate-300 mx-1" />
+          <button
+            type="button"
+            onClick={() => execCommand("underline")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="Gạch chân (Underline)"
+          >
+            <Underline className="w-4 h-4" />
+          </button>
 
           <button
             type="button"
+            onClick={() => execCommand("strikeThrough")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="Gạch ngang chữ (Strikethrough)"
+          >
+            <Strikethrough className="w-4 h-4" />
+          </button>
+
+          <div className="h-4 w-px bg-slate-300 mx-1" />
+
+          {/* Headers & Blockquotes */}
+          <button
+            type="button"
             onClick={() => execCommand("formatBlock", "h2")}
-            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors font-bold text-xs"
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 font-bold text-xs"
             title="Tiêu đề H2"
           >
             <Heading2 className="w-4 h-4" />
@@ -209,14 +270,24 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           <button
             type="button"
             onClick={() => execCommand("formatBlock", "h3")}
-            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors font-bold text-xs"
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 font-bold text-xs"
             title="Tiêu đề H3"
           >
             <Heading3 className="w-4 h-4" />
           </button>
 
+          <button
+            type="button"
+            onClick={() => execCommand("formatBlock", "blockquote")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="Trích dẫn Pháp lý"
+          >
+            <Quote className="w-4 h-4" />
+          </button>
+
           <div className="h-4 w-px bg-slate-300 mx-1" />
 
+          {/* Lists & Divider */}
           <button
             type="button"
             onClick={() => execCommand("insertUnorderedList")}
@@ -224,6 +295,24 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
             title="Danh sách gạch đầu dòng"
           >
             <List className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => execCommand("insertOrderedList")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="Danh sách đánh số (1, 2, 3)"
+          >
+            <ListOrdered className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => execCommand("insertHorizontalRule")}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition-colors"
+            title="Đường phân cách (Horizontal Rule)"
+          >
+            <Minus className="w-4 h-4" />
           </button>
 
           <button
@@ -236,7 +325,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
           </button>
         </div>
 
-        {/* Right: Upload Image Action */}
+        {/* Right Section: Image Upload Button & Feedback */}
         <div className="flex items-center gap-2">
           {feedback && (
             <span
@@ -282,7 +371,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
                 onChange(visualEditorRef.current.innerHTML);
               }
             }}
-            className="min-h-[350px] p-4 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-lg prose-h2:font-bold prose-h3:text-base prose-h3:font-semibold prose-p:my-2 prose-img:rounded-xl prose-img:shadow-sm prose-img:my-3 prose-a:text-navy prose-a:underline"
+            className="min-h-[400px] p-5 border border-slate-300 rounded-lg text-slate-900 text-sm leading-relaxed font-sans focus:ring-2 focus:ring-navy focus:outline-none prose max-w-none prose-headings:font-serif prose-headings:text-navy prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2 prose-p:my-3 prose-p:leading-relaxed prose-blockquote:border-l-4 prose-blockquote:border-gold prose-blockquote:bg-amber-50/50 prose-blockquote:p-3 prose-blockquote:italic prose-img:rounded-xl prose-img:shadow-md prose-img:my-4 prose-a:text-navy prose-a:underline"
             suppressContentEditableWarning
           />
         </div>
@@ -291,7 +380,7 @@ export default function RichArticleEditor({ content, onChange }: RichArticleEdit
         <div className="p-4 bg-slate-950">
           <textarea
             ref={codeTextareaRef}
-            rows={16}
+            rows={18}
             value={content}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Chỉnh sửa mã nguồn HTML..."

@@ -308,7 +308,7 @@ Trường hợp hòa giải không thành, chuẩn bị đơn khởi kiện kèm
 export async function generateWithGemini(
   options: GeminiGenerateOptions
 ): Promise<GeminiGenerateResult> {
-  const apiKey = options.apiKey || process.env.GEMINI_API_KEY;
+  const apiKey = (options.apiKey || process.env.GEMINI_API_KEY || "").trim();
   const requestId = `gemini_req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const systemInstruction =
     options.systemInstruction || buildDynamicPromptInstruction(options.objectiveConfig, options.isRegenerate);
@@ -323,27 +323,30 @@ ${options.existingArticleContext ? `[NGỮ CẢNH BÀI VIẾT ĐANG CÓ]:\n${opt
 YÊU CẦU ĐẶC BIỆT: Bạn phải viết thành một BÀI VIẾT HOÀN CHỈNH THỰC TẾ (REAL PUBLISHABLE ARTICLE DRAFT). KHÔNG xuất ra outline, KHÔNG ghi nhãn prefix như "[Biến thể mới]" hay "Mục tiêu:", KHÔNG ghi "1. Mở bài...", KHÔNG ghi meta-commentary.
 `.trim();
 
+  const isTestEnvironment = Boolean(process.env.VITEST || process.env.NODE_ENV === "test");
+
   // Fallback mode if API key is unconfigured or placeholder
-  if (!apiKey || apiKey.trim() === "" || apiKey.includes("••••")) {
-    console.warn("⚠️ GEMINI_API_KEY not set. Using Dynamic Objective High-Value Generator Engine.");
+  if (!apiKey || apiKey === "" || apiKey.includes("••••") || apiKey.startsWith("env:")) {
+    if (isTestEnvironment) {
+      console.warn("⚠️ GEMINI_API_KEY not set. Using Dynamic Objective High-Value Generator Engine in test environment.");
+      await new Promise((res) => setTimeout(res, 300));
+      const rawContent = generateObjectiveFallbackDraft(
+        options.userHighlight || options.prompt,
+        options.topic,
+        options.objectiveConfig,
+        options.isRegenerate
+      );
+      return {
+        content: sanitizeArticleDraft(rawContent),
+        inputTokens: Math.round(fullUserPrompt.length / 4) + 150,
+        outputTokens: 750,
+        providerRequestId: requestId,
+      };
+    }
 
-    await new Promise((res) => setTimeout(res, 500));
-
-    const rawContent = generateObjectiveFallbackDraft(
-      options.userHighlight || options.prompt,
-      options.topic,
-      options.objectiveConfig,
-      options.isRegenerate
+    throw new Error(
+      "⚠️ Chưa cấu hình Google Gemini API Key hợp lệ. Vui lòng vào trang Quản trị -> 'AI Provider (SYSADMIN)' hoặc 'Cài đặt AI' để cập nhật GEMINI_API_KEY."
     );
-
-    const content = sanitizeArticleDraft(rawContent);
-
-    return {
-      content,
-      inputTokens: Math.round(fullUserPrompt.length / 4) + 150,
-      outputTokens: 750,
-      providerRequestId: requestId,
-    };
   }
 
   // Real Gemini REST API Call
@@ -363,7 +366,48 @@ YÊU CẦU ĐẶC BIỆT: Bạn phải viết thành một BÀI VIẾT HOÀN CH�
     });
 
     if (!response.ok) {
-      console.warn(`Gemini API returned status ${response.status}. Using High-Value Fallback generator.`);
+      const errJson = await response.json().catch(() => ({}));
+      const googleErrMsg = errJson.error?.message || `Mã lỗi HTTP ${response.status}`;
+      console.warn(`Gemini API returned HTTP ${response.status}: ${googleErrMsg}`);
+
+      if (isTestEnvironment) {
+        const rawContent = generateObjectiveFallbackDraft(
+          options.userHighlight || options.prompt,
+          options.topic,
+          options.objectiveConfig,
+          options.isRegenerate
+        );
+        return {
+          content: sanitizeArticleDraft(rawContent),
+          inputTokens: 150,
+          outputTokens: 750,
+          providerRequestId: requestId,
+        };
+      }
+
+      throw new Error(
+        `⚠️ Google Gemini API phản hồi lỗi (HTTP ${response.status}): ${googleErrMsg}. Vui lòng kiểm tra lại GEMINI_API_KEY và hạn mức tại Google AI Studio.`
+      );
+    }
+
+    const data = await response.json();
+    const rawGeneratedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!rawGeneratedText || rawGeneratedText.trim() === "") {
+      throw new Error("⚠️ Google Gemini API không trả về văn bản nội dung. Vui lòng thử lại với câu lệnh/highlight rõ ràng hơn.");
+    }
+
+    const content = sanitizeArticleDraft(rawGeneratedText);
+
+    return {
+      content,
+      inputTokens: data.usageMetadata?.promptTokenCount || 150,
+      outputTokens: data.usageMetadata?.candidatesTokenCount || 500,
+      providerRequestId: requestId,
+    };
+  } catch (err: any) {
+    console.error("Gemini API execution error:", err);
+    if (isTestEnvironment) {
       const rawContent = generateObjectiveFallbackDraft(
         options.userHighlight || options.prompt,
         options.topic,
@@ -378,37 +422,8 @@ YÊU CẦU ĐẶC BIỆT: Bạn phải viết thành một BÀI VIẾT HOÀN CH�
       };
     }
 
-    const data = await response.json();
-    const rawGeneratedText =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      generateObjectiveFallbackDraft(
-        options.userHighlight || options.prompt,
-        options.topic,
-        options.objectiveConfig,
-        options.isRegenerate
-      );
-
-    const content = sanitizeArticleDraft(rawGeneratedText);
-
-    return {
-      content,
-      inputTokens: data.usageMetadata?.promptTokenCount || 150,
-      outputTokens: data.usageMetadata?.candidatesTokenCount || 500,
-      providerRequestId: requestId,
-    };
-  } catch (err) {
-    console.error("Gemini API call failed, using High-Value Fallback engine:", err);
-    const rawContent = generateObjectiveFallbackDraft(
-      options.userHighlight || options.prompt,
-      options.topic,
-      options.objectiveConfig,
-      options.isRegenerate
+    throw new Error(
+      err.message || "Lỗi kết nối tới dịch vụ Google Gemini AI. Vui lòng kiểm tra mạng hoặc thử lại sau ít phút."
     );
-    return {
-      content: sanitizeArticleDraft(rawContent),
-      inputTokens: 150,
-      outputTokens: 750,
-      providerRequestId: requestId,
-    };
   }
 }

@@ -89,8 +89,12 @@ export async function runAIGeneration(params: AIGenerateParams) {
     const provider = await prisma.aIProvider.findUnique({
       where: { code: "GEMINI" },
     });
-    if (provider?.credentialRef && !provider.credentialRef.startsWith("env:")) {
-      dbApiKey = provider.credentialRef;
+    if (
+      provider?.credentialRef &&
+      !provider.credentialRef.startsWith("env:") &&
+      !provider.credentialRef.includes("••••")
+    ) {
+      dbApiKey = provider.credentialRef.trim();
     }
   } catch (e) {}
 

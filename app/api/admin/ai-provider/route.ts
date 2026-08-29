@@ -12,7 +12,35 @@ export async function GET() {
     where: { code: "GEMINI" },
   });
 
-  return NextResponse.json({ success: true, provider });
+  if (!provider) {
+    return NextResponse.json({ success: true, provider: null });
+  }
+
+  // Mask sensitive API Key for GET UI display
+  let maskedKey = "";
+  if (provider.credentialRef) {
+    if (provider.credentialRef.startsWith("env:")) {
+      const envKey = process.env.GEMINI_API_KEY;
+      if (envKey && envKey.length > 8) {
+        maskedKey = `${envKey.slice(0, 4)}••••••••${envKey.slice(-4)}`;
+      } else {
+        maskedKey = "env:GEMINI_API_KEY";
+      }
+    } else if (provider.credentialRef.length > 8) {
+      maskedKey = `${provider.credentialRef.slice(0, 4)}••••••••${provider.credentialRef.slice(-4)}`;
+    } else {
+      maskedKey = "••••••••••••••••••••••••••••";
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    provider: {
+      ...provider,
+      credentialRef: maskedKey,
+      hasSavedKey: Boolean(provider.credentialRef && provider.credentialRef !== "env:GEMINI_API_KEY"),
+    },
+  });
 }
 
 export async function PUT(req: Request) {
@@ -31,8 +59,9 @@ export async function PUT(req: Request) {
       status: Boolean(status),
     };
 
+    // Save actual API key when Sysadmin enters a valid unmasked key
     if (apiKey && apiKey.trim() !== "" && !apiKey.includes("••••")) {
-      dataToUpdate.credentialRef = `env:GEMINI_API_KEY`;
+      dataToUpdate.credentialRef = apiKey.trim();
     }
 
     const provider = await prisma.aIProvider.update({

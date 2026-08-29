@@ -22,6 +22,7 @@ export default function SYSADMINAIProviderPage() {
   const [defaultModel, setDefaultModel] = useState("gemini-1.5-flash");
   const [apiKey, setApiKey] = useState("••••••••••••••••••••••••••••");
   const [status, setStatus] = useState(true);
+  const [hasSavedKey, setHasSavedKey] = useState(false);
 
   // Objectives State
   const [objectives, setObjectives] = useState<DBObjective[]>([]);
@@ -61,6 +62,10 @@ export default function SYSADMINAIProviderPage() {
           setName(providerData.provider.name || "Google Gemini AI Engine");
           setDefaultModel(providerData.provider.defaultModel || "gemini-1.5-flash");
           setStatus(providerData.provider.status ?? true);
+          if (providerData.provider.credentialRef) {
+            setApiKey(providerData.provider.credentialRef);
+          }
+          setHasSavedKey(Boolean(providerData.provider.hasSavedKey));
         }
         if (objData.objectives) {
           setObjectives(objData.objectives);
@@ -312,6 +317,12 @@ export default function SYSADMINAIProviderPage() {
                 onChange={(e) => setApiKey(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy focus:outline-none"
               />
+              {hasSavedKey && (
+                <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  Đã cấu hình Google Gemini API Key riêng trong CSDL
+                </p>
+              )}
             </div>
 
             <div className="pt-2">

@@ -301,8 +301,11 @@ export default function SYSADMINAIProviderPage() {
                 onChange={(e) => setDefaultModel(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus:ring-2 focus:ring-navy focus:outline-none"
               >
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Cực nhanh, tối ưu chi phí)</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Lý luận sâu, bài viết dài)</option>
+                <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Latest - Khuyên dùng)</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Thế hệ mới cực nhanh)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Chuẩn)</option>
+                <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Latest - Lý luận sâu)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Chuẩn)</option>
               </select>
             </div>
 

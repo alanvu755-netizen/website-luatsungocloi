@@ -349,62 +349,104 @@ YÊU CẦU ĐẶC BIỆT: Bạn phải viết thành một BÀI VIẾT HOÀN CH�
     );
   }
 
-  // Real Gemini REST API Call
+  // Real Gemini REST API Call with Auto-Retry Model Resolver
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent?key=${apiKey}`;
+    const candidateModels = Array.from(
+      new Set([
+        options.model,
+        "gemini-1.5-flash-latest",
+        "gemini-3.6-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro-latest",
+        "gemini-1.5-pro",
+      ])
+    );
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: `${systemInstruction}\n\n${fullUserPrompt}` }],
-          },
-        ],
-      }),
-    });
+    let lastErrorMessage = "";
 
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({}));
-      const googleErrMsg = errJson.error?.message || `Mã lỗi HTTP ${response.status}`;
-      console.warn(`Gemini API returned HTTP ${response.status}: ${googleErrMsg}`);
+    for (const currentModel of candidateModels) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
-      if (isTestEnvironment) {
-        const rawContent = generateObjectiveFallbackDraft(
-          options.userHighlight || options.prompt,
-          options.topic,
-          options.objectiveConfig,
-          options.isRegenerate
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: `${systemInstruction}\n\n${fullUserPrompt}` }],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const googleErrMsg = errJson.error?.message || `Mã lỗi HTTP ${response.status}`;
+        lastErrorMessage = googleErrMsg;
+        console.warn(`Gemini API model [${currentModel}] returned HTTP ${response.status}: ${googleErrMsg}`);
+
+        // If 404 or model not found, continue to next candidate model
+        if (response.status === 404 || googleErrMsg.toLowerCase().includes("not found")) {
+          continue;
+        }
+
+        if (isTestEnvironment) {
+          const rawContent = generateObjectiveFallbackDraft(
+            options.userHighlight || options.prompt,
+            options.topic,
+            options.objectiveConfig,
+            options.isRegenerate
+          );
+          return {
+            content: sanitizeArticleDraft(rawContent),
+            inputTokens: 150,
+            outputTokens: 750,
+            providerRequestId: requestId,
+          };
+        }
+
+        throw new Error(
+          `⚠️ Google Gemini API phản hồi lỗi (HTTP ${response.status}): ${googleErrMsg}. Vui lòng kiểm tra lại GEMINI_API_KEY và hạn mức tại Google AI Studio.`
         );
-        return {
-          content: sanitizeArticleDraft(rawContent),
-          inputTokens: 150,
-          outputTokens: 750,
-          providerRequestId: requestId,
-        };
       }
 
-      throw new Error(
-        `⚠️ Google Gemini API phản hồi lỗi (HTTP ${response.status}): ${googleErrMsg}. Vui lòng kiểm tra lại GEMINI_API_KEY và hạn mức tại Google AI Studio.`
+      const data = await response.json();
+      const rawGeneratedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawGeneratedText || rawGeneratedText.trim() === "") {
+        continue;
+      }
+
+      const content = sanitizeArticleDraft(rawGeneratedText);
+
+      return {
+        content,
+        inputTokens: data.usageMetadata?.promptTokenCount || 150,
+        outputTokens: data.usageMetadata?.candidatesTokenCount || 500,
+        providerRequestId: requestId,
+      };
+    }
+
+    if (isTestEnvironment) {
+      const rawContent = generateObjectiveFallbackDraft(
+        options.userHighlight || options.prompt,
+        options.topic,
+        options.objectiveConfig,
+        options.isRegenerate
       );
+      return {
+        content: sanitizeArticleDraft(rawContent),
+        inputTokens: 150,
+        outputTokens: 750,
+        providerRequestId: requestId,
+      };
     }
 
-    const data = await response.json();
-    const rawGeneratedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!rawGeneratedText || rawGeneratedText.trim() === "") {
-      throw new Error("⚠️ Google Gemini API không trả về văn bản nội dung. Vui lòng thử lại với câu lệnh/highlight rõ ràng hơn.");
-    }
-
-    const content = sanitizeArticleDraft(rawGeneratedText);
-
-    return {
-      content,
-      inputTokens: data.usageMetadata?.promptTokenCount || 150,
-      outputTokens: data.usageMetadata?.candidatesTokenCount || 500,
-      providerRequestId: requestId,
-    };
+    throw new Error(
+      `⚠️ Google Gemini API không tìm thấy mô hình khả dụng (404): ${lastErrorMessage || "Models not found"}. Vui lòng kiểm tra lại GEMINI_API_KEY tại Google AI Studio.`
+    );
   } catch (err: any) {
     console.error("Gemini API execution error:", err);
     if (isTestEnvironment) {

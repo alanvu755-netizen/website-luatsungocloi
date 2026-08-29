@@ -5,6 +5,7 @@ interface PracticeAreaItem {
   id: string;
   title: string;
   description?: string | null;
+  icon?: string | null;
 }
 
 interface PracticeAreasSectionProps {
@@ -31,7 +32,14 @@ function getHrefForTitle(title: string): string {
   return "/thu-vien-phap-luat/dat-dai";
 }
 
-function getIconForTitle(title: string) {
+function getIconForTitle(title: string, iconStr?: string | null) {
+  if (iconStr === "Users") return Users;
+  if (iconStr === "FileText") return FileText;
+  if (iconStr === "Scale") return Scale;
+  if (iconStr === "Building2") return Building2;
+  if (iconStr === "Shield") return Shield;
+  if (iconStr === "Home") return Home;
+
   const upper = title.toUpperCase();
   if (upper.includes("HÔN NHÂN")) return Users;
   if (upper.includes("DÂN SỰ")) return FileText;
@@ -94,7 +102,7 @@ export default function PracticeAreasSection({ items }: PracticeAreasSectionProp
       id: item.id || `db_cat_${idx}`,
       title: item.title.toUpperCase(),
       description: item.description || DEFAULT_CATEGORIES[idx % DEFAULT_CATEGORIES.length].description,
-      icon: getIconForTitle(item.title),
+      icon: getIconForTitle(item.title, item.icon),
       href: getHrefForTitle(item.title),
     }));
   }

@@ -165,12 +165,23 @@ export default async function AdminMenusPage({
                         </button>
                       </form>
 
-                      <form action={handleDeleteMenu}>
+                      <form
+                        action={handleDeleteMenu}
+                        onSubmit={(e) => {
+                          if (
+                            !confirm(
+                              `⚠️ XÁC NHẬN XÓA MENU: Thao tác này sẽ xóa vĩnh viễn Menu "${menu.title}" và các Chuyên mục con liên quan.\n\nBạn có chắc chắn muốn xóa không?`
+                            )
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
                         <input type="hidden" name="id" value={menu.id} />
                         <button
                           type="submit"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Xóa Menu"
+                          title="Xóa Menu (Có hỏi xác nhận)"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -195,9 +206,20 @@ export default async function AdminMenusPage({
                           <span className="text-xs font-semibold text-slate-800">{sub.title}</span>
                           <span className="text-[10px] text-slate-400 font-mono ml-2">/{sub.slug}</span>
                         </div>
-                        <form action={handleDeleteSubmenu}>
+                        <form
+                          action={handleDeleteSubmenu}
+                          onSubmit={(e) => {
+                            if (
+                              !confirm(
+                                `⚠️ XÁC NHẬN XÓA CHUYÊN MỤC CON: Bạn có chắc chắn muốn xóa chuyên mục "${sub.title}" không?`
+                              )
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
                           <input type="hidden" name="id" value={sub.id} />
-                          <button type="submit" className="text-slate-400 hover:text-red-600">
+                          <button type="submit" className="text-slate-400 hover:text-red-600" title="Xóa Chuyên mục con (Có hỏi xác nhận)">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </form>

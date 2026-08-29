@@ -5,6 +5,7 @@ import PracticeAreasSection from "@/components/public/PracticeAreasSection";
 import ConsultationSection from "@/components/public/ConsultationSection";
 import { getSiteBySlug } from "@/lib/services/site.service";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
+import { getPublishedPracticeAreas } from "@/lib/services/practice-area.service";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 export default async function LinhVucHoatDongPage() {
   const site = await getSiteBySlug("le-thi-ngoc-loi");
   const enabledChannels = site ? await getEnabledContactChannels(site.id) : [];
+  const practiceAreas = site ? await getPublishedPracticeAreas(site.id) : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -44,7 +46,7 @@ export default async function LinhVucHoatDongPage() {
       </div>
 
       <main className="flex-grow">
-        <PracticeAreasSection />
+        <PracticeAreasSection items={practiceAreas} />
         <ConsultationSection />
       </main>
 

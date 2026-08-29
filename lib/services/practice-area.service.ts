@@ -11,7 +11,7 @@ export async function getPracticeAreas(siteId: string) {
   });
 }
 
-export const getPublishedPracticeAreas = memoize(async (siteId: string) => {
+export async function getPublishedPracticeAreas(siteId: string) {
   return await prisma.practiceArea.findMany({
     where: {
       siteId,
@@ -19,7 +19,7 @@ export const getPublishedPracticeAreas = memoize(async (siteId: string) => {
     },
     orderBy: { displayOrder: "asc" },
   });
-});
+}
 
 export async function createPracticeArea(
   siteId: string,

@@ -6,9 +6,10 @@ import { Upload, Bold, Italic, Underline, Strikethrough, Heading2, Heading3, Lis
 interface RichArticleEditorProps {
   content: string;
   onChange: (newContent: string) => void;
+  placeholder?: string;
 }
 
-export default function RichArticleEditor({ content, onChange }: RichArticleEditorProps) {
+export default function RichArticleEditor({ content, onChange, placeholder }: RichArticleEditorProps) {
   const [activeTab, setActiveTab] = useState<"visual" | "code">("visual");
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);

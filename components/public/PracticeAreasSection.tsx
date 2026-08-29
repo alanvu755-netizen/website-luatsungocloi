@@ -10,6 +10,7 @@ interface PracticeAreaItem {
 
 interface PracticeAreasSectionProps {
   items?: PracticeAreaItem[];
+  sectionTitle?: string | null;
 }
 
 function getHrefForTitle(title: string): string {
@@ -94,7 +95,7 @@ const DEFAULT_CATEGORIES = [
   },
 ];
 
-export default function PracticeAreasSection({ items }: PracticeAreasSectionProps) {
+export default function PracticeAreasSection({ items, sectionTitle }: PracticeAreasSectionProps) {
   let displayCategories = DEFAULT_CATEGORIES;
 
   if (items && items.length > 0) {
@@ -114,7 +115,7 @@ export default function PracticeAreasSection({ items }: PracticeAreasSectionProp
         {/* Section Header */}
         <div className="flex flex-col items-center mb-10">
           <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-navy uppercase tracking-wider">
-            LĨNH VỰC HOẠT ĐỘNG
+            {sectionTitle || "LĨNH VỰC HOẠT ĐỘNG"}
           </h2>
           <div className="flex items-center gap-2 mt-2 text-gold">
             <div className="h-[2px] w-12 bg-gold/60"></div>

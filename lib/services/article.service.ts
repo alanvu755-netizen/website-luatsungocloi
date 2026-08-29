@@ -54,6 +54,7 @@ export const getPublicArticles = memoize(
   async (
     siteId: string,
     options?: {
+      isNews?: boolean;
       menuId?: string;
       submenuId?: string;
       menuSlug?: string;
@@ -73,6 +74,10 @@ export const getPublicArticles = memoize(
           siteId,
           status: "PUBLISHED",
         };
+
+        if (typeof options?.isNews === "boolean") {
+          where.isNews = options.isNews;
+        }
 
         if (options?.submenuId) {
           where.submenuId = options.submenuId;
@@ -212,6 +217,7 @@ export async function createArticle(
     excerpt?: string | null;
     content: string;
     thumbnailUrl?: string | null;
+    isNews?: boolean;
     status?: "DRAFT" | "PUBLISHED" | "HIDDEN";
     seoTitle?: string | null;
     metaDescription?: string | null;
@@ -232,6 +238,7 @@ export async function createArticle(
       excerpt: data.excerpt,
       content: data.content,
       thumbnailUrl: data.thumbnailUrl,
+      isNews: data.isNews ?? false,
       status: data.status || "DRAFT",
       publishedAt: isPublishing ? new Date() : null,
       seoTitle: data.seoTitle,
@@ -265,6 +272,7 @@ export async function updateArticle(
     excerpt?: string | null;
     content?: string;
     thumbnailUrl?: string | null;
+    isNews?: boolean;
     status?: "DRAFT" | "PUBLISHED" | "HIDDEN";
     seoTitle?: string | null;
     metaDescription?: string | null;

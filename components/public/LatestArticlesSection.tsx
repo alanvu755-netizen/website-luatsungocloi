@@ -16,11 +16,13 @@ export interface ArticleItemData {
 
 interface LatestArticlesSectionProps {
   articles: ArticleItemData[];
+  sectionTitle?: string | null;
   className?: string;
 }
 
 export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
   articles,
+  sectionTitle,
   className = "",
 }) => {
   if (!articles || articles.length === 0) {
@@ -38,7 +40,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
           <div className="flex flex-col items-start">
             <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-navy uppercase tracking-wider">
-              TIN TỨC PHÁP LUẬT
+              {sectionTitle || "TIN TỨC PHÁP LUẬT"}
             </h2>
             <div className="flex items-center gap-2 mt-1 text-gold">
               <div className="h-[2px] w-10 bg-gold/60"></div>

@@ -11,6 +11,9 @@ export default function AdminSettingsPage() {
   const [floatingContactEnabled, setFloatingContactEnabled] = useState(true);
   const [footerDisclaimer, setFooterDisclaimer] = useState("© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.");
 
+  const [practiceAreasSectionTitle, setPracticeAreasSectionTitle] = useState("LĨNH VỰC HOẠT ĐỘNG");
+  const [newsSectionTitle, setNewsSectionTitle] = useState("TIN TỨC PHÁP LUẬT");
+
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -25,6 +28,8 @@ export default function AdminSettingsPage() {
           setAddress(data.settings.address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp");
           setFloatingContactEnabled(data.settings.floatingContactEnabled ?? true);
           setFooterDisclaimer(data.settings.footerDisclaimer || "© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.");
+          setPracticeAreasSectionTitle(data.settings.practiceAreasSectionTitle || "LĨNH VỰC HOẠT ĐỘNG");
+          setNewsSectionTitle(data.settings.newsSectionTitle || "TIN TỨC PHÁP LUẬT");
         }
       })
       .catch(() => console.error("Error fetching admin settings"));
@@ -46,6 +51,8 @@ export default function AdminSettingsPage() {
           address,
           floatingContactEnabled,
           footerDisclaimer,
+          practiceAreasSectionTitle,
+          newsSectionTitle,
         }),
       });
 
@@ -159,6 +166,39 @@ export default function AdminSettingsPage() {
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-navy focus:outline-none"
             />
             <p className="text-[11px] text-slate-500 mt-1">Dòng chữ bản quyền hiển thị ở thanh chân trang (Footer) trên toàn bộ Website Public.</p>
+          </div>
+
+          {/* Section Heading Titles Settings */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+            <h3 className="text-xs font-bold uppercase text-navy border-b border-slate-200 pb-2">
+              Tiêu đề các Khối Hiển thị trên Trang chủ (Homepage Section Headings)
+            </h3>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Tiêu đề Khối Lĩnh vực Hoạt động
+              </label>
+              <input
+                type="text"
+                value={practiceAreasSectionTitle}
+                onChange={(e) => setPracticeAreasSectionTitle(e.target.value)}
+                placeholder="VD: LĨNH VỰC HOẠT ĐỘNG"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-navy focus:ring-2 focus:ring-navy focus:outline-none bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
+                Tiêu đề Khối Tin tức Pháp luật
+              </label>
+              <input
+                type="text"
+                value={newsSectionTitle}
+                onChange={(e) => setNewsSectionTitle(e.target.value)}
+                placeholder="VD: TIN TỨC PHÁP LUẬT"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-navy focus:ring-2 focus:ring-navy focus:outline-none bg-white"
+              />
+            </div>
           </div>
 
           <div className="pt-3 border-t border-slate-100">

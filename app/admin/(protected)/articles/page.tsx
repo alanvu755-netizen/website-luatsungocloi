@@ -125,7 +125,18 @@ export default async function AdminArticlesPage({
                 articlesData.articles.map((art: any) => (
                   <tr key={art.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-900 text-sm line-clamp-1">{art.title}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-900 text-sm line-clamp-1">{art.title}</span>
+                        {art.isNews ? (
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-full flex-shrink-0">
+                            📰 Tin tức
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-medium rounded-full flex-shrink-0">
+                            ⚖️ Chuyên môn
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-slate-400 font-mono line-clamp-1 mt-0.5">/{art.slug}</div>
                     </td>
                     <td className="py-3 px-4 font-medium text-slate-700">

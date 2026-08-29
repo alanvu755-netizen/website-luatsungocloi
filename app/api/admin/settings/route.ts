@@ -28,7 +28,16 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const { phone, email, consultationNotificationEmail, address, floatingContactEnabled, footerDisclaimer } = body;
+    const {
+      phone,
+      email,
+      consultationNotificationEmail,
+      address,
+      floatingContactEnabled,
+      footerDisclaimer,
+      practiceAreasSectionTitle,
+      newsSectionTitle,
+    } = body;
 
     const settings = await prisma.siteSettings.upsert({
       where: { siteId },
@@ -39,6 +48,8 @@ export async function PUT(req: Request) {
         address,
         floatingContactEnabled,
         footerDisclaimer,
+        practiceAreasSectionTitle: practiceAreasSectionTitle || "LĨNH VỰC HOẠT ĐỘNG",
+        newsSectionTitle: newsSectionTitle || "TIN TỨC PHÁP LUẬT",
       },
       create: {
         siteId,
@@ -48,6 +59,8 @@ export async function PUT(req: Request) {
         address: address || "Số 149, đường Lê Thị Riêng, phường Cao Lãnh, Đồng Tháp",
         floatingContactEnabled: floatingContactEnabled ?? true,
         footerDisclaimer: footerDisclaimer || "",
+        practiceAreasSectionTitle: practiceAreasSectionTitle || "LĨNH VỰC HOẠT ĐỘNG",
+        newsSectionTitle: newsSectionTitle || "TIN TỨC PHÁP LUẬT",
       },
     });
 

@@ -44,6 +44,7 @@ export default function EditArticlePage() {
   const [selectedSubmenuId, setSelectedSubmenuId] = useState<string>("");
   const [selectedPracticeAreaIds, setSelectedPracticeAreaIds] = useState<string[]>([]);
 
+  const [isNews, setIsNews] = useState(false);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -92,6 +93,7 @@ export default function EditArticlePage() {
           setMetaDescription(art.metaDescription || "");
           setSelectedMenuId(art.menuId);
           setSelectedSubmenuId(art.submenuId || "");
+          setIsNews(Boolean(art.isNews));
           if (art.articlePracticeAreas) {
             setSelectedPracticeAreaIds(
               art.articlePracticeAreas.map((apa: any) => apa.practiceAreaId)
@@ -576,6 +578,25 @@ export default function EditArticlePage() {
                 </select>
               </div>
             )}
+
+            <div className="pt-2 border-t border-slate-100">
+              <label className="flex items-start gap-2.5 cursor-pointer p-2.5 bg-purple-50/60 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isNews}
+                  onChange={(e) => setIsNews(e.target.checked)}
+                  className="mt-0.5 rounded text-purple-600 focus:ring-purple-500"
+                />
+                <div>
+                  <span className="text-xs font-bold text-purple-900 block">
+                    📰 Hiển thị tại khối &quot;Tin tức Pháp luật&quot; Trang chủ
+                  </span>
+                  <span className="text-[11px] text-purple-700 block mt-0.5">
+                    Tích chọn ô này nếu bài viết là Bản tin thời sự, Sự kiện hoặc Thông cáo báo chí.
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Practice Areas Multi-Selection */}

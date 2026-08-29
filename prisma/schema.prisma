@@ -255,6 +255,8 @@ model SiteSettings {
   googleMapsUrl                  String?
   floatingContactEnabled         Boolean  @default(true)
   footerDisclaimer               String?  @default("© 2026 Bản quyền thuộc về Luật sư – Thạc sĩ Lê Thị Ngọc Lợi. Tất cả các quyền được bảo hộ.")
+  practiceAreasSectionTitle      String?  @default("LĨNH VỰC HOẠT ĐỘNG")
+  newsSectionTitle               String?  @default("TIN TỨC PHÁP LUẬT")
   seoTitle                       String?
   seoDescription                 String?
   createdAt                      DateTime @default(now())
@@ -329,6 +331,7 @@ model Article {
   excerpt         String?
   content         String
   thumbnailUrl    String?
+  isNews          Boolean               @default(false)
   status          String                @default("DRAFT") // "DRAFT" | "PUBLISHED" | "HIDDEN"
   publishedAt     DateTime?
   seoTitle        String?

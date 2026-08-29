@@ -47,6 +47,8 @@ const DEFAULT_SETTINGS = {
   phone: "0902 081 061",
   address: "Phường Cao Lãnh, Đồng Tháp",
   floatingContactEnabled: true,
+  practiceAreasSectionTitle: "LĨNH VỰC HOẠT ĐỘNG",
+  newsSectionTitle: "TIN TỨC PHÁP LUẬT",
 };
 
 async function getSiteData() {
@@ -83,14 +85,19 @@ async function getSiteData() {
 
     const statistics = await getPublicStatistics(site.id).catch(() => DEFAULT_STATISTICS);
     
-    // Prioritize querying articles belonging to the News menu
-    const newsMenu = await prisma.menu.findFirst({
-      where: { siteId: site.id, OR: [{ slug: "tin-tuc" }, { title: { contains: "Tin tức" } }] },
-    });
-    let articlesResult: any = { articles: [] };
-    if (newsMenu) {
-      articlesResult = await getPublicArticles(site.id, { menuId: newsMenu.id, pageSize: 4 }).catch(() => ({ articles: [] }));
+    // Query articles specifically marked as isNews: true
+    let articlesResult: any = await getPublicArticles(site.id, { isNews: true, pageSize: 4 }).catch(() => ({ articles: [] }));
+
+    // Fallback: If no articles are marked as isNews yet, check for Menu 'tin-tuc' or overall articles
+    if (!articlesResult.articles || articlesResult.articles.length === 0) {
+      const newsMenu = await prisma.menu.findFirst({
+        where: { siteId: site.id, OR: [{ slug: "tin-tuc" }, { title: { contains: "Tin tức" } }] },
+      });
+      if (newsMenu) {
+        articlesResult = await getPublicArticles(site.id, { menuId: newsMenu.id, pageSize: 4 }).catch(() => ({ articles: [] }));
+      }
     }
+
     if (!articlesResult.articles || articlesResult.articles.length === 0) {
       articlesResult = await getPublicArticles(site.id, { pageSize: 4 }).catch(() => ({ articles: [] }));
     }
@@ -150,7 +157,7 @@ export default async function PublicPage() {
       <Hero data={data.hero} />
 
       {/* 3. Lĩnh Vực Hoạt Động (6 White Cards Grid) */}
-      <PracticeAreasSection items={data.practiceAreas} />
+      <PracticeAreasSection items={data.practiceAreas} sectionTitle={data.settings?.practiceAreasSectionTitle} />
 
       {/* 4. Statistics Counter Bar (Full Navy Bar) */}
       <StatisticsSection items={data.statistics} />
@@ -160,7 +167,7 @@ export default async function PublicPage() {
 
       {/* 6. Tin Tức Pháp Luật (4-Card Article Grid) */}
       {data.articles.length > 0 && (
-        <LatestArticlesSection articles={data.articles} />
+        <LatestArticlesSection articles={data.articles} sectionTitle={data.settings?.newsSectionTitle} />
       )}
 
       {/* 7. Footer & Quick Consultation Form (Full Navy Footer) */}

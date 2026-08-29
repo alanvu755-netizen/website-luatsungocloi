@@ -212,6 +212,7 @@ export default function EditArticlePage() {
           slug,
           excerpt,
           content,
+          isNews,
           seoTitle,
           metaDescription,
           status,

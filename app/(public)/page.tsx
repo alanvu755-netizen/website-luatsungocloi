@@ -88,7 +88,7 @@ async function getSiteData() {
     // Query articles specifically marked as isNews: true
     let articlesResult: any = await getPublicArticles(site.id, { isNews: true, pageSize: 4 }).catch(() => ({ articles: [] }));
 
-    // Fallback: If no articles are marked as isNews yet, check for Menu 'tin-tuc' or overall articles
+    // Secondary Check: If no articles are marked as isNews yet, check if there are articles specifically under Menu 'tin-tuc'
     if (!articlesResult.articles || articlesResult.articles.length === 0) {
       const newsMenu = await prisma.menu.findFirst({
         where: { siteId: site.id, OR: [{ slug: "tin-tuc" }, { title: { contains: "Tin tức" } }] },
@@ -96,10 +96,6 @@ async function getSiteData() {
       if (newsMenu) {
         articlesResult = await getPublicArticles(site.id, { menuId: newsMenu.id, pageSize: 4 }).catch(() => ({ articles: [] }));
       }
-    }
-
-    if (!articlesResult.articles || articlesResult.articles.length === 0) {
-      articlesResult = await getPublicArticles(site.id, { pageSize: 4 }).catch(() => ({ articles: [] }));
     }
 
     return {

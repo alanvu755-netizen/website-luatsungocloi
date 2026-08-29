@@ -82,7 +82,18 @@ async function getSiteData() {
     }
 
     const statistics = await getPublicStatistics(site.id).catch(() => DEFAULT_STATISTICS);
-    const articlesResult = await getPublicArticles(site.id, { pageSize: 4 }).catch(() => ({ articles: [] }));
+    
+    // Prioritize querying articles belonging to the News menu
+    const newsMenu = await prisma.menu.findFirst({
+      where: { siteId: site.id, OR: [{ slug: "tin-tuc" }, { title: { contains: "Tin tức" } }] },
+    });
+    let articlesResult: any = { articles: [] };
+    if (newsMenu) {
+      articlesResult = await getPublicArticles(site.id, { menuId: newsMenu.id, pageSize: 4 }).catch(() => ({ articles: [] }));
+    }
+    if (!articlesResult.articles || articlesResult.articles.length === 0) {
+      articlesResult = await getPublicArticles(site.id, { pageSize: 4 }).catch(() => ({ articles: [] }));
+    }
 
     return {
       siteId: site.id,

@@ -2,7 +2,9 @@ import { getAuthenticatedUser } from "@/lib/auth/session";
 import { getMenus, createMenu, updateMenu, deleteMenu, createSubmenu, deleteSubmenu, MAX_SUBMENU_PER_MENU } from "@/lib/services/menu.service";
 import { getEffectiveSiteId } from "@/lib/services/site.service";
 import { redirect } from "next/navigation";
-import { FolderTree, Plus, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { FolderTree, Plus, Eye, EyeOff, AlertCircle } from "lucide-react";
+import DeleteMenuButton from "@/components/admin/DeleteMenuButton";
+import DeleteSubmenuButton from "@/components/admin/DeleteSubmenuButton";
 
 export default async function AdminMenusPage({
   searchParams,
@@ -100,164 +102,136 @@ export default async function AdminMenusPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
-      
       {/* Page Header */}
       <div>
         <h1 className="text-xl font-bold text-navy font-serif flex items-center gap-2">
           <FolderTree className="w-5 h-5 text-gold" />
-          Quản lý Dynamic Menu & Chuyên mục
+          Quản lý Menu & Chuyên mục Submenu
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Tạo và quản lý danh mục Menu, Chuyên mục con (Tối đa 5 Chuyên mục / Menu) và trạng thái Hiển thị / Ẩn.
+          Tạo và quản lý các Menu chính (Ví dụ: Thư viện Pháp luật, Tin tức) và tối đa 5 Chuyên mục con (Submenu) cho mỗi Menu.
         </p>
       </div>
 
       {searchParams?.error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
           <span>{searchParams.error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Menu & Submenu List */}
-        <div className="lg:col-span-7 space-y-4">
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Menu Tree Listing */}
+        <div className="md:col-span-7 space-y-4">
           <h2 className="text-xs font-bold uppercase text-navy tracking-wider">
-            Danh sách Menu ({menus.length})
+            Danh sách Menu hiện tại ({menus.length})
           </h2>
 
           <div className="space-y-4">
-            {menus.map((menu) => {
-              const isMaxSubmenuReached = menu.submenus.length >= MAX_SUBMENU_PER_MENU;
+            {menus.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 text-center text-xs text-slate-400">
+                Chưa có Menu nào được khởi tạo.
+              </div>
+            ) : (
+              menus.map((menu: any) => {
+                const isMaxSubmenuReached = menu.submenus.length >= MAX_SUBMENU_PER_MENU;
 
-              return (
-                <div key={menu.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-                  
-                  {/* Menu Row */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-slate-900 text-base">{menu.title}</h3>
-                        <span
-                          className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${
-                            menu.status === "VISIBLE"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-slate-200 text-slate-600"
-                          }`}
-                        >
-                          {menu.status === "VISIBLE" ? "Hiển thị" : "Ẩn"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">/{menu.slug}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <form action={handleToggleMenuStatus}>
-                        <input type="hidden" name="id" value={menu.id} />
-                        <input type="hidden" name="currentStatus" value={menu.status} />
-                        <button
-                          type="submit"
-                          className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-                          title={menu.status === "VISIBLE" ? "Ẩn Menu" : "Hiển thị Menu"}
-                        >
-                          {menu.status === "VISIBLE" ? <Eye className="w-4 h-4 text-emerald-600" /> : <EyeOff className="w-4 h-4 text-slate-400" />}
-                        </button>
-                      </form>
-
-                      <form
-                        action={handleDeleteMenu}
-                        onSubmit={(e) => {
-                          if (
-                            !confirm(
-                              `⚠️ XÁC NHẬN XÓA MENU: Thao tác này sẽ xóa vĩnh viễn Menu "${menu.title}" và các Chuyên mục con liên quan.\n\nBạn có chắc chắn muốn xóa không?`
-                            )
-                          ) {
-                            e.preventDefault();
-                          }
-                        }}
-                      >
-                        <input type="hidden" name="id" value={menu.id} />
-                        <button
-                          type="submit"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Xóa Menu (Có hỏi xác nhận)"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-
-                  {/* Submenus (Chuyên mục) Section */}
-                  <div className="pl-4 border-l-2 border-slate-200 space-y-3">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-semibold uppercase">
-                      <span>Chuyên mục ({menu.submenus.length}/{MAX_SUBMENU_PER_MENU})</span>
-                      {isMaxSubmenuReached && (
-                        <span className="text-amber-600 text-[11px] normal-case font-medium">
-                          Menu này đã có tối đa 5 chuyên mục.
-                        </span>
-                      )}
-                    </div>
-
-                    {menu.submenus.map((sub) => (
-                      <div key={sub.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-semibold text-slate-800">{sub.title}</span>
-                          <span className="text-[10px] text-slate-400 font-mono ml-2">/{sub.slug}</span>
+                return (
+                  <div
+                    key={menu.id}
+                    className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"
+                  >
+                    {/* Menu Header Row */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-serif font-bold text-sm text-navy uppercase tracking-tight">
+                            {menu.title}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                              menu.status === "VISIBLE"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-slate-200 text-slate-600"
+                            }`}
+                          >
+                            {menu.status}
+                          </span>
                         </div>
-                        <form
-                          action={handleDeleteSubmenu}
-                          onSubmit={(e) => {
-                            if (
-                              !confirm(
-                                `⚠️ XÁC NHẬN XÓA CHUYÊN MỤC CON: Bạn có chắc chắn muốn xóa chuyên mục "${sub.title}" không?`
-                              )
-                            ) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <input type="hidden" name="id" value={sub.id} />
-                          <button type="submit" className="text-slate-400 hover:text-red-600" title="Xóa Chuyên mục con (Có hỏi xác nhận)">
-                            <Trash2 className="w-3.5 h-3.5" />
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">/{menu.slug}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <form action={handleToggleMenuStatus}>
+                          <input type="hidden" name="id" value={menu.id} />
+                          <input type="hidden" name="currentStatus" value={menu.status} />
+                          <button
+                            type="submit"
+                            className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                            title={menu.status === "VISIBLE" ? "Ẩn Menu" : "Hiển thị Menu"}
+                          >
+                            {menu.status === "VISIBLE" ? <Eye className="w-4 h-4 text-emerald-600" /> : <EyeOff className="w-4 h-4 text-slate-400" />}
                           </button>
                         </form>
+
+                        <DeleteMenuButton menuId={menu.id} menuTitle={menu.title} action={handleDeleteMenu} />
                       </div>
-                    ))}
+                    </div>
 
-                    {/* Add Submenu Form */}
-                    <form action={handleAddSubmenu} className="pt-2 flex items-center gap-2">
-                      <input type="hidden" name="menuId" value={menu.id} />
-                      <input
-                        type="text"
-                        name="title"
-                        placeholder="Tên chuyên mục mới"
-                        disabled={isMaxSubmenuReached}
-                        required
-                        className="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-navy focus:outline-none disabled:bg-slate-100"
-                      />
-                      <input
-                        type="text"
-                        name="slug"
-                        placeholder="slug (vd: dat-dai)"
-                        disabled={isMaxSubmenuReached}
-                        required
-                        className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy focus:outline-none disabled:bg-slate-100"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isMaxSubmenuReached}
-                        className="px-3 py-1.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-xs disabled:opacity-40"
-                      >
-                        + Thêm
-                      </button>
-                    </form>
+                    {/* Submenus (Chuyên mục) Section */}
+                    <div className="pl-4 border-l-2 border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between text-xs text-slate-500 font-semibold uppercase">
+                        <span>Chuyên mục ({menu.submenus.length}/{MAX_SUBMENU_PER_MENU})</span>
+                        {isMaxSubmenuReached && (
+                          <span className="text-amber-600 text-[11px] normal-case font-medium">
+                            Menu này đã có tối đa 5 chuyên mục.
+                          </span>
+                        )}
+                      </div>
+
+                      {menu.submenus.map((sub: any) => (
+                        <div key={sub.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-semibold text-slate-800">{sub.title}</span>
+                            <span className="text-[10px] text-slate-400 font-mono ml-2">/{sub.slug}</span>
+                          </div>
+                          <DeleteSubmenuButton submenuId={sub.id} submenuTitle={sub.title} action={handleDeleteSubmenu} />
+                        </div>
+                      ))}
+
+                      {/* Add Submenu Form */}
+                      <form action={handleAddSubmenu} className="pt-2 flex items-center gap-2">
+                        <input type="hidden" name="menuId" value={menu.id} />
+                        <input
+                          type="text"
+                          name="title"
+                          placeholder="Tên chuyên mục mới"
+                          disabled={isMaxSubmenuReached}
+                          required
+                          className="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-navy focus:outline-none disabled:bg-slate-100"
+                        />
+                        <input
+                          type="text"
+                          name="slug"
+                          placeholder="slug (vd: dat-dai)"
+                          disabled={isMaxSubmenuReached}
+                          required
+                          className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-navy focus:outline-none disabled:bg-slate-100"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isMaxSubmenuReached}
+                          className="px-3 py-1.5 bg-navy hover:bg-navy-dark text-white font-semibold text-xs rounded-lg shadow-xs disabled:opacity-40"
+                        >
+                          + Thêm
+                        </button>
+                      </form>
+                    </div>
                   </div>
-
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 

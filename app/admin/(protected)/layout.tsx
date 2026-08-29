@@ -46,8 +46,7 @@ export default async function ProtectedAdminLayout({
     {
       title: "NỘI DUNG CONTENT CMS",
       items: [
-        { label: "Quản lý Tin tức", href: "/admin/news", icon: Newspaper },
-        { label: "Thư viện Bài viết", href: "/admin/articles", icon: FileText },
+        { label: "Tất cả bài viết", href: "/admin/articles", icon: FileText },
         { label: "Menu quản lý", href: "/admin/menus", icon: FolderTree },
         { label: "Lĩnh vực tư vấn", href: "/admin/practice-areas", icon: Scale },
         { label: "Chỉ số nổi bật (Stats)", href: "/admin/statistics", icon: BarChart3 },

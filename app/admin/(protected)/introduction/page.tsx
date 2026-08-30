@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, Upload, Save, AlertCircle, Check } from "lucide-react";
+import { CheckCircle, Upload, Save, AlertCircle, Check, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminIntroductionPage() {
@@ -19,6 +19,30 @@ export default function AdminIntroductionPage() {
   const [pubContent, setPubContent] = useState("");
   const [pubImageUrl, setPubImageUrl] = useState("/NgocLoi-office.jpg");
   const [pubHighlights, setPubHighlights] = useState<string[]>([]);
+
+  const addHighlightLine = () => {
+    setDraftHighlights((prev) => [...prev, ""]);
+  };
+
+  const removeHighlightLine = (idx: number) => {
+    if (draftHighlights.length <= 1) {
+      alert("Cần giữ lại ít nhất 1 dòng nổi bật!");
+      return;
+    }
+    setDraftHighlights((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveHighlightLine = (idx: number, direction: "up" | "down") => {
+    if (direction === "up" && idx === 0) return;
+    if (direction === "down" && idx === draftHighlights.length - 1) return;
+
+    const newArr = [...draftHighlights];
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    const temp = newArr[idx];
+    newArr[idx] = newArr[targetIdx];
+    newArr[targetIdx] = temp;
+    setDraftHighlights(newArr);
+  };
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -256,21 +280,28 @@ export default function AdminIntroductionPage() {
               />
             </div>
 
-            {/* NHÓM CÀI ĐẶT: LĨNH VỰC HOẠT ĐỘNG (4 DÒNG CHECKMARK) */}
+            {/* NHÓM CÀI ĐẶT: LĨNH VỰC HOẠT ĐỘNG (DÒNG NỔI BẬT DYNAMIC) */}
             <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3">
               <div className="border-b border-amber-200/80 pb-2 flex items-center justify-between">
-                <h3 className="text-xs font-extrabold uppercase text-amber-900 tracking-wider">
-                  LĨNH VỰC HOẠT ĐỘNG (4 Dòng Nổi bật & Danh hiệu)
-                </h3>
-                <span className="text-[10px] font-semibold text-amber-700">Checkmark Bullet Points</span>
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase text-amber-900 tracking-wider">
+                    LĨNH VỰC HOẠT ĐỘNG (Dòng Nổi bật & Danh hiệu)
+                  </h3>
+                  <span className="text-[10px] text-amber-700 block mt-0.5">
+                    Tùy chỉnh, Thêm mới hoặc Xóa các dòng checkmark ngoài Trang chủ
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-bold rounded-full">
+                  {draftHighlights.length} dòng
+                </span>
               </div>
               
               <div className="space-y-2.5">
                 {draftHighlights.map((item, idx) => (
-                  <div key={idx}>
-                    <label className="block text-[11px] font-bold text-amber-950 mb-1">
-                      Dòng nổi bật {idx + 1}:
-                    </label>
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-amber-900 w-5 shrink-0">
+                      #{idx + 1}
+                    </span>
                     <input
                       type="text"
                       value={item}
@@ -280,10 +311,54 @@ export default function AdminIntroductionPage() {
                         setDraftHighlights(newHighlights);
                       }}
                       required
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 bg-white focus:ring-2 focus:ring-navy focus:outline-none"
+                      placeholder={`Nhập dòng nổi bật ${idx + 1}...`}
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 bg-white focus:ring-2 focus:ring-navy focus:outline-none"
                     />
+
+                    {/* Up / Down Controls */}
+                    <button
+                      type="button"
+                      onClick={() => moveHighlightLine(idx, "up")}
+                      disabled={idx === 0}
+                      title="Di chuyển lên"
+                      className="p-1.5 bg-white border border-slate-200 text-slate-600 rounded-md hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveHighlightLine(idx, "down")}
+                      disabled={idx === draftHighlights.length - 1}
+                      title="Di chuyển xuống"
+                      className="p-1.5 bg-white border border-slate-200 text-slate-600 rounded-md hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Delete Line Button */}
+                    <button
+                      type="button"
+                      onClick={() => removeHighlightLine(idx)}
+                      disabled={draftHighlights.length <= 1}
+                      title="Xóa dòng này"
+                      className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-md hover:bg-rose-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
+              </div>
+
+              {/* Add New Line Button */}
+              <div className="pt-2 border-t border-amber-200/60">
+                <button
+                  type="button"
+                  onClick={addHighlightLine}
+                  className="w-full py-2 bg-amber-100/80 hover:bg-amber-200/80 border border-amber-300/80 text-amber-950 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Plus className="w-4 h-4 text-amber-800" />
+                  <span>Thêm dòng nổi bật mới</span>
+                </button>
               </div>
             </div>
 

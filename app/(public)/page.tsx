@@ -152,19 +152,19 @@ export default async function PublicPage() {
       {/* 2. Full-Width Navy Hero Section (Standing Lawyer Portrait on Left, Main Title & 4 Badges on Right) */}
       <Hero data={data.hero} />
 
-      {/* 3. Lĩnh Vực Hoạt Động (6 White Cards Grid) */}
-      <PracticeAreasSection items={data.practiceAreas} sectionTitle={data.settings?.practiceAreasSectionTitle} />
-
-      {/* 4. Statistics Counter Bar (Full Navy Bar) */}
-      <StatisticsSection items={data.statistics} />
-
-      {/* 5. Về Luật Sư Lê Thị Ngọc Lợi (Standalone Introduction Section: Sitting Lawyer Photo on Left, Text & 4 Checkmarks on Right) */}
-      <IntroductionSection data={data.introduction} />
-
-      {/* 6. Tin Tức Pháp Luật (4-Card Article Grid) */}
+      {/* 3. Tin Tức Pháp Luật (4-Card Article Grid) - Displayed before Practice Areas */}
       {data.articles.length > 0 && (
         <LatestArticlesSection articles={data.articles} sectionTitle={data.settings?.newsSectionTitle} />
       )}
+
+      {/* 4. Lĩnh Vực Hoạt Động (6 White Cards Grid) */}
+      <PracticeAreasSection items={data.practiceAreas} sectionTitle={data.settings?.practiceAreasSectionTitle} />
+
+      {/* 5. Statistics Counter Bar (Full Navy Bar) */}
+      <StatisticsSection items={data.statistics} />
+
+      {/* 6. Về Luật Sư Lê Thị Ngọc Lợi (Standalone Introduction Section: Sitting Lawyer Photo on Left, Text & 4 Checkmarks on Right) */}
+      <IntroductionSection data={data.introduction} />
 
       {/* 7. Footer & Quick Consultation Form (Full Navy Footer) */}
       <Footer settings={data.settings} />

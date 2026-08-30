@@ -41,6 +41,13 @@ describe("ANTIGRAVITY — AI Objective & Differentiated Content Generation Suite
     }
 
     sysAdminUser = await prisma.adminUser.findFirst({ where: { status: true } });
+    if (sysAdminUser && site) {
+      await prisma.adminUser.update({
+        where: { id: sysAdminUser.id },
+        data: { siteId: site.id },
+      });
+      sysAdminUser.siteId = site.id;
+    }
 
     // Seed test objective
     sampleObjective = await prisma.contentObjective.upsert({

@@ -43,6 +43,13 @@ describe("ANTIGRAVITY — AI-Assisted Article Creation V2 Test Suite (TC-AI-ARTI
     sysAdminUser = await prisma.adminUser.findFirst({
       where: { status: true },
     });
+    if (sysAdminUser && site) {
+      await prisma.adminUser.update({
+        where: { id: sysAdminUser.id },
+        data: { siteId: site.id },
+      });
+      sysAdminUser.siteId = site.id;
+    }
   });
 
   // TC-AI-ARTICLE-01: Admin chọn Content Objective

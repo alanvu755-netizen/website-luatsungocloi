@@ -33,12 +33,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { draftTitle, draftContent, draftImageUrl } = body;
+    const { draftTitle, draftContent, draftImageUrl, draftHighlightsJson } = body;
 
     const updated = await updateIntroductionDraft(siteId, {
       draftTitle,
       draftContent,
       draftImageUrl: draftImageUrl || "/NgocLoi-office.jpg",
+      draftHighlightsJson,
     });
 
     return NextResponse.json({ success: true, intro: updated });

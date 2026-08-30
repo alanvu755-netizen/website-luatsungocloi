@@ -8,10 +8,17 @@ export default function AdminIntroductionPage() {
   const [draftTitle, setDraftTitle] = useState("VỀ LUẬT SƯ LÊ THỊ NGỌC LỢI");
   const [draftContent, setDraftContent] = useState("");
   const [draftImageUrl, setDraftImageUrl] = useState("/NgocLoi-office.jpg");
+  const [draftHighlights, setDraftHighlights] = useState<string[]>([
+    "Tốt nghiệp Thạc sĩ Luật",
+    "Đoàn Luật sư tỉnh Đồng Tháp",
+    "Chuyên môn vững vàng – Kinh nghiệm thực tiễn",
+    "Phong cách làm việc tận tâm – Uy tín – Hiệu quả",
+  ]);
 
   const [pubTitle, setPubTitle] = useState("VỀ LUẬT SƯ LÊ THỊ NGỌC LỢI");
   const [pubContent, setPubContent] = useState("");
   const [pubImageUrl, setPubImageUrl] = useState("/NgocLoi-office.jpg");
+  const [pubHighlights, setPubHighlights] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +38,20 @@ export default function AdminIntroductionPage() {
           setPubTitle(data.intro.pubTitle || "VỀ LUẬT SƯ LÊ THỊ NGỌC LỢI");
           setPubContent(data.intro.pubContent || "");
           setPubImageUrl(data.intro.pubImageUrl || "/NgocLoi-office.jpg");
+
+          if (data.intro.draftHighlightsJson) {
+            try {
+              const parsed = JSON.parse(data.intro.draftHighlightsJson);
+              if (Array.isArray(parsed) && parsed.length > 0) setDraftHighlights(parsed);
+            } catch (e) {}
+          }
+
+          if (data.intro.pubHighlightsJson) {
+            try {
+              const parsed = JSON.parse(data.intro.pubHighlightsJson);
+              if (Array.isArray(parsed) && parsed.length > 0) setPubHighlights(parsed);
+            } catch (e) {}
+          }
         }
       })
       .catch(() => setFeedback({ type: "error", message: "Không thể tải dữ liệu Giới thiệu." }))
@@ -78,13 +99,14 @@ export default function AdminIntroductionPage() {
           draftTitle,
           draftContent,
           draftImageUrl,
+          draftHighlightsJson: JSON.stringify(draftHighlights),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Lỗi lưu bản nháp.");
 
-      setFeedback({ type: "success", message: "✓ Đã lưu Bản nháp trang Giới thiệu & Ảnh văn phòng thành công." });
+      setFeedback({ type: "success", message: "✓ Đã lưu Bản nháp trang Giới thiệu & Lĩnh vực hoạt động thành công." });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi lưu bản nháp." });
     } finally {
@@ -105,7 +127,8 @@ export default function AdminIntroductionPage() {
       setPubTitle(draftTitle);
       setPubContent(draftContent);
       setPubImageUrl(draftImageUrl);
-      setFeedback({ type: "success", message: "✓ Đã xuất bản trang Giới thiệu & Ảnh văn phòng ra Public thành công." });
+      setPubHighlights([...draftHighlights]);
+      setFeedback({ type: "success", message: "✓ Đã xuất bản trang Giới thiệu & Lĩnh vực hoạt động ra Public thành công." });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi xuất bản." });
     } finally {
@@ -118,82 +141,102 @@ export default function AdminIntroductionPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header & Global Action */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
         <div>
-          <h1 className="text-xl font-bold text-navy font-serif">Quản lý Phần Giới thiệu & Ảnh Văn phòng</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Chỉnh sửa đoạn văn giới thiệu và Tải ảnh Luật sư làm việc tại văn phòng (`NgocLoi-office.jpg`).
+          <h1 className="text-xl font-extrabold text-navy uppercase font-serif tracking-tight">
+            Quản lý Trang Giới thiệu & Lĩnh vực Hoạt động
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Chỉnh sửa nội dung bài viết Giới thiệu, Ảnh đại diện văn phòng và 4 điểm nổi bật Lĩnh vực hoạt động.
           </p>
         </div>
         
         <button
           onClick={handlePublish}
           disabled={publishing}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-2"
         >
           <CheckCircle className="w-4 h-4" />
-          {publishing ? "Đang xuất bản..." : "Xuất bản ra Website Public"}
+          <span>{publishing ? "Đang xuất bản..." : "Xuất bản ra Trang Chủ (Publish Live)"}</span>
         </button>
       </div>
 
       {feedback && (
         <div
-          className={`p-4 rounded-xl text-xs flex items-center gap-3 border ${
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
             feedback.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-red-50 border-red-200 text-red-700"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
           {feedback.type === "success" ? (
-            <Check className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+            <Check className="w-4 h-4 text-emerald-600" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+            <AlertCircle className="w-4 h-4 text-rose-600" />
           )}
           <span>{feedback.message}</span>
         </div>
       )}
 
-      {/* Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Grid: 2 Columns - Left: Published Live, Right: Draft Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Published Version */}
-        <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-emerald-800 tracking-wider">
-              ĐANG XUẤT BẢN (Public)
+        {/* COL 1: PUBLIC LIVE CURRENT CONTENT */}
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Nội dung đang hiển thị ngoài Public
             </span>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-600 text-white rounded-full">
-              PUBLISHED
+            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+              LIVE
             </span>
           </div>
+
           <div className="space-y-3">
-            <h3 className="font-serif font-bold text-navy text-base">{pubTitle}</h3>
-            
             <div>
-              <span className="text-xs text-slate-500 font-medium">Ảnh văn phòng Public:</span>
-              <div className="mt-1.5 relative w-full h-44 rounded-lg overflow-hidden border border-emerald-300 bg-slate-100">
-                <Image src={pubImageUrl} alt="Ảnh văn phòng Public" fill className="object-cover" />
+              <span className="text-[11px] font-semibold text-slate-400 block uppercase">Tiêu đề:</span>
+              <h2 className="text-sm font-serif font-extrabold text-navy">{pubTitle}</h2>
+            </div>
+
+            <div>
+              <span className="text-[11px] font-semibold text-slate-400 block uppercase">Ảnh văn phòng Live:</span>
+              <div className="relative w-full h-40 rounded-lg overflow-hidden border border-slate-200 bg-white mt-1">
+                <Image src={pubImageUrl || "/NgocLoi-office.jpg"} alt="Ảnh văn phòng Live" fill className="object-cover" />
               </div>
             </div>
 
             <div>
-              <span className="text-xs text-slate-500 font-medium">Nội dung Public:</span>
-              <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line mt-1 bg-white p-3 rounded-lg border border-slate-200">
-                {pubContent}
+              <span className="text-[11px] font-semibold text-slate-400 block uppercase mb-1">
+                LĨNH VỰC HOẠT ĐỘNG (4 Dòng Nổi bật Live):
+              </span>
+              <div className="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200 text-xs">
+                {(pubHighlights.length > 0 ? pubHighlights : draftHighlights).map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-slate-700 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0"></span>
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
+            </div>
+
+            <div>
+              <span className="text-[11px] font-semibold text-slate-400 block uppercase">Nội dung văn bản:</span>
+              <p className="text-xs text-slate-700 leading-relaxed font-light mt-1 whitespace-pre-line bg-white p-3 rounded-lg border border-slate-200">
+                {pubContent || "Chưa có nội dung xuất bản."}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Edit Draft Form */}
+        {/* COL 2: EDIT DRAFT FORM */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-navy tracking-wider">
-              BẢN NHÁP (Draft)
-            </span>
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-navy">
+              Chỉnh sửa Bản nháp (Draft Editor)
+            </h2>
             <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full">
               DRAFT
             </span>
@@ -211,6 +254,37 @@ export default function AdminIntroductionPage() {
                 required
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-navy focus:ring-2 focus:ring-navy focus:outline-none"
               />
+            </div>
+
+            {/* NHÓM CÀI ĐẶT: LĨNH VỰC HOẠT ĐỘNG (4 DÒNG CHECKMARK) */}
+            <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3">
+              <div className="border-b border-amber-200/80 pb-2 flex items-center justify-between">
+                <h3 className="text-xs font-extrabold uppercase text-amber-900 tracking-wider">
+                  LĨNH VỰC HOẠT ĐỘNG (4 Dòng Nổi bật & Danh hiệu)
+                </h3>
+                <span className="text-[10px] font-semibold text-amber-700">Checkmark Bullet Points</span>
+              </div>
+              
+              <div className="space-y-2.5">
+                {draftHighlights.map((item, idx) => (
+                  <div key={idx}>
+                    <label className="block text-[11px] font-bold text-amber-950 mb-1">
+                      Dòng nổi bật {idx + 1}:
+                    </label>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => {
+                        const newHighlights = [...draftHighlights];
+                        newHighlights[idx] = e.target.value;
+                        setDraftHighlights(newHighlights);
+                      }}
+                      required
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 bg-white focus:ring-2 focus:ring-navy focus:outline-none"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">

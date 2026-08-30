@@ -18,6 +18,7 @@ export async function getPublishedIntroduction(siteId: string) {
     title: intro.pubTitle,
     content: intro.pubContent,
     imageUrl: intro.pubImageUrl || "/NgocLoi-office.jpg",
+    highlightsJson: intro.pubHighlightsJson,
   };
 }
 
@@ -27,6 +28,7 @@ export async function updateIntroductionDraft(
     draftTitle: string;
     draftContent: string;
     draftImageUrl?: string | null;
+    draftHighlightsJson?: string | null;
   }
 ) {
   return await prisma.introduction.update({
@@ -35,6 +37,7 @@ export async function updateIntroductionDraft(
       draftTitle: data.draftTitle,
       draftContent: data.draftContent,
       draftImageUrl: data.draftImageUrl || "/NgocLoi-office.jpg",
+      draftHighlightsJson: data.draftHighlightsJson,
     },
   });
 }
@@ -50,6 +53,7 @@ export async function publishIntroduction(siteId: string, adminUserId: string) {
       pubTitle: intro.draftTitle,
       pubContent: intro.draftContent,
       pubImageUrl: intro.draftImageUrl || "/NgocLoi-office.jpg",
+      pubHighlightsJson: intro.draftHighlightsJson,
       status: "PUBLISHED",
     },
   });

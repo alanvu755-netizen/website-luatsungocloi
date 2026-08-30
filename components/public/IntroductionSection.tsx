@@ -6,14 +6,32 @@ interface IntroductionProps {
     title?: string;
     content?: string;
     imageUrl?: string | null;
+    highlightsJson?: string | null;
   } | null;
 }
+
+const DEFAULT_HIGHLIGHTS = [
+  "Tốt nghiệp Thạc sĩ Luật",
+  "Đoàn Luật sư tỉnh Đồng Tháp",
+  "Chuyên môn vững vàng – Kinh nghiệm thực tiễn",
+  "Phong cách làm việc tận tâm – Uy tín – Hiệu quả",
+];
 
 export default function IntroductionSection({ data }: IntroductionProps) {
   const content =
     data?.content ||
     "Luật sư – Thạc sĩ Lê Thị Ngọc Lợi với hơn 10 năm kinh nghiệm trong lĩnh vực tư vấn và tranh tụng, đã đồng hành và bảo vệ quyền lợi hợp pháp cho hàng trăm cá nhân, tổ chức.";
   const imageUrl = data?.imageUrl || "/NgocLoi-office.jpg";
+
+  let highlights = DEFAULT_HIGHLIGHTS;
+  if (data?.highlightsJson) {
+    try {
+      const parsed = JSON.parse(data.highlightsJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        highlights = parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch (e) {}
+  }
 
   return (
     <section id="gioi-thieu" className="py-12 sm:py-16 bg-white border-b border-slate-200">
@@ -47,35 +65,16 @@ export default function IntroductionSection({ data }: IntroductionProps) {
               {content}
             </p>
 
-            {/* 4 Check-mark Checklist Points */}
+            {/* Dynamic Check-mark Checklist Points */}
             <div className="space-y-2.5 pt-1 w-full">
-              <div className="flex items-center gap-2.5 text-slate-800 text-xs sm:text-sm font-semibold">
-                <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-amber-700 flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
+              {highlights.map((text, idx) => (
+                <div key={idx} className="flex items-center gap-2.5 text-slate-800 text-xs sm:text-sm font-semibold">
+                  <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-amber-700 flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
+                  </div>
+                  <span>{text}</span>
                 </div>
-                <span>Tốt nghiệp Thạc sĩ Luật</span>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-slate-800 text-xs sm:text-sm font-semibold">
-                <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-amber-700 flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
-                </div>
-                <span>Đoàn Luật sư tỉnh Đồng Tháp</span>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-slate-800 text-xs sm:text-sm font-semibold">
-                <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-amber-700 flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
-                </div>
-                <span>Chuyên môn vững vàng – Kinh nghiệm thực tiễn</span>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-slate-800 text-xs sm:text-sm font-semibold">
-                <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-amber-700 flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
-                </div>
-                <span>Phong cách làm việc tận tâm – Uy tín – Hiệu quả</span>
-              </div>
+              ))}
             </div>
 
             {/* Action Button */}

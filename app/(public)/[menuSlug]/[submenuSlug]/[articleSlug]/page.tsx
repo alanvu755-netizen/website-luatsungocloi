@@ -221,7 +221,7 @@ export default async function PublicSubmenuArticleDetailPage({
           <div className="space-y-2 text-center sm:text-left">
             <h3 className="font-serif font-bold text-lg sm:text-xl text-white flex items-center justify-center sm:justify-start gap-2">
               <ShieldCheck className="w-6 h-6 text-gold" />
-              Bạn cần Tư vấn Pháp lý Trực tiếp?
+              Bạn cần tư vấn pháp lý trực tiếp?
             </h3>
             <p className="text-xs sm:text-sm text-slate-200">
               Liên hệ ngay với Luật sư – Thạc sĩ Lê Thị Ngọc Lợi để nhận giải pháp pháp lý an toàn và tối ưu nhất.

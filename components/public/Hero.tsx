@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, ShieldCheck, Zap, Lock, ArrowRight } from "lucide-react";
 
 interface HeroProps {
@@ -113,12 +114,12 @@ export default function Hero({ data }: HeroProps) {
                 <ArrowRight className="w-4 h-4" />
               </a>
 
-              <a
-                href="#linh-vuc-hoat-dong"
+              <Link
+                href="/gioi-thieu"
                 className="inline-flex items-center justify-center gap-2 border border-slate-400/80 hover:border-gold hover:text-gold text-white px-6 py-3 rounded-md font-sans text-xs sm:text-sm font-extrabold uppercase tracking-wide transition-all bg-navy/40 hover:bg-navy/80"
               >
                 <span>{ctaSecondaryText}</span>
-              </a>
+              </Link>
             </div>
 
           </div>

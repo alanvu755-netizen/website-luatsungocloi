@@ -4,6 +4,7 @@ import Footer from "@/components/public/Footer";
 import IntroductionSection from "@/components/public/IntroductionSection";
 import StatisticsSection from "@/components/public/StatisticsSection";
 import { getSiteBySlug } from "@/lib/services/site.service";
+import { getPublishedIntroduction } from "@/lib/services/introduction.service";
 import { getEnabledContactChannels } from "@/lib/services/contact-channel.service";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 export default async function GioiThieuPage() {
   const site = await getSiteBySlug("le-thi-ngoc-loi");
   const enabledChannels = site ? await getEnabledContactChannels(site.id) : [];
+  const introData = site ? await getPublishedIntroduction(site.id) : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -44,7 +46,7 @@ export default async function GioiThieuPage() {
       </div>
 
       <main className="flex-grow">
-        <IntroductionSection />
+        <IntroductionSection data={introData} />
         <StatisticsSection />
       </main>
 

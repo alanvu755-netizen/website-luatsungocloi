@@ -119,6 +119,7 @@ async function getSiteData() {
             title: site.introduction.pubTitle || DEFAULT_INTRO.title,
             content: site.introduction.pubContent || DEFAULT_INTRO.content,
             imageUrl: site.introduction.pubImageUrl || "/NgocLoi-office.jpg",
+            highlightsJson: site.introduction.pubHighlightsJson,
           }
         : DEFAULT_INTRO,
       statistics: statistics.length > 0 ? statistics : DEFAULT_STATISTICS,

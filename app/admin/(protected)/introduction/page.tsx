@@ -143,7 +143,16 @@ export default function AdminIntroductionPage() {
     setFeedback(null);
 
     try {
-      const res = await fetch("/api/admin/introduction/publish", { method: "POST" });
+      const res = await fetch("/api/admin/introduction/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draftTitle,
+          draftContent,
+          draftImageUrl,
+          draftHighlightsJson: JSON.stringify(draftHighlights),
+        }),
+      });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Lỗi xuất bản.");
@@ -152,7 +161,7 @@ export default function AdminIntroductionPage() {
       setPubContent(draftContent);
       setPubImageUrl(draftImageUrl);
       setPubHighlights([...draftHighlights]);
-      setFeedback({ type: "success", message: "✓ Đã xuất bản trang Giới thiệu & Lĩnh vực hoạt động ra Public thành công." });
+      setFeedback({ type: "success", message: "✓ Đã xuất bản trang Giới thiệu & Lĩnh vực hoạt động ra Trang chủ thành công!" });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi xuất bản." });
     } finally {

@@ -63,25 +63,44 @@ export async function updateHeroDraft(
   });
 }
 
-export async function publishHero(siteId: string, adminUserId: string) {
+export async function publishHero(siteId: string, adminUserId: string, data?: any) {
   const hero = await prisma.hero.findUnique({ where: { siteId } });
   if (!hero) throw new Error("Hero record not found");
 
-  // Atomic publish: copy draft* -> pub*
+  const subtitle = data?.draftSubtitle !== undefined ? data.draftSubtitle : hero.draftSubtitle;
+  const name = data?.draftName !== undefined ? data.draftName : hero.draftName;
+  const imageUrl = data?.draftImageUrl !== undefined ? data.draftImageUrl : hero.draftImageUrl;
+  const title1 = data?.draftTitle1 !== undefined ? data.draftTitle1 : hero.draftTitle1;
+  const title2 = data?.draftTitle2 !== undefined ? data.draftTitle2 : hero.draftTitle2;
+  const description = data?.draftDescription !== undefined ? data.draftDescription : hero.draftDescription;
+  const badgesJson = data?.draftBadgesJson !== undefined ? data.draftBadgesJson : hero.draftBadgesJson;
+  const ctaPrimaryText = data?.draftCtaPrimaryText !== undefined ? data.draftCtaPrimaryText : hero.draftCtaPrimaryText;
+  const ctaSecondaryText = data?.draftCtaSecondaryText !== undefined ? data.draftCtaSecondaryText : hero.draftCtaSecondaryText;
+
+  // Atomic publish: save draft* & pub* simultaneously
   const updatedHero = await prisma.hero.update({
     where: { siteId },
     data: {
-      pubSubtitle: hero.draftSubtitle,
-      pubName: hero.draftName,
-      pubImageUrl: hero.draftImageUrl,
-      pubTitle1: hero.draftTitle1,
-      pubTitle2: hero.draftTitle2,
-      pubDescription: hero.draftDescription,
-      pubBadgesJson: hero.draftBadgesJson,
-      pubCtaPrimaryText: hero.draftCtaPrimaryText,
-      pubCtaSecondaryText: hero.draftCtaSecondaryText,
-      pubImageId: hero.draftImageId,
-      pubLogoId: hero.draftLogoId,
+      draftSubtitle: subtitle,
+      draftName: name,
+      draftImageUrl: imageUrl,
+      draftTitle1: title1,
+      draftTitle2: title2,
+      draftDescription: description,
+      draftBadgesJson: badgesJson,
+      draftCtaPrimaryText: ctaPrimaryText,
+      draftCtaSecondaryText: ctaSecondaryText,
+
+      pubSubtitle: subtitle,
+      pubName: name,
+      pubImageUrl: imageUrl,
+      pubTitle1: title1,
+      pubTitle2: title2,
+      pubDescription: description,
+      pubBadgesJson: badgesJson,
+      pubCtaPrimaryText: ctaPrimaryText,
+      pubCtaSecondaryText: ctaSecondaryText,
+
       status: "PUBLISHED",
     },
   });
@@ -95,13 +114,15 @@ export async function publishHero(siteId: string, adminUserId: string) {
       entityType: "Hero",
       entityId: hero.id,
       metadata: JSON.stringify({
-        pubSubtitle: hero.draftSubtitle,
-        pubName: hero.draftName,
-        pubImageUrl: hero.draftImageUrl,
+        pubSubtitle: subtitle,
       }),
     },
   });
 
-  try { revalidatePath("/"); } catch (e) {}
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin/hero");
+  } catch (e) {}
+
   return updatedHero;
 }

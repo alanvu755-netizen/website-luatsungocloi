@@ -84,7 +84,20 @@ export default function AdminHeroPage() {
     setFeedback(null);
 
     try {
-      const res = await fetch("/api/admin/hero/publish", { method: "POST" });
+      const res = await fetch("/api/admin/hero/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draftSubtitle,
+          draftName,
+          draftImageUrl,
+          draftTitle1,
+          draftTitle2,
+          draftDescription,
+          draftCtaPrimaryText,
+          draftCtaSecondaryText,
+        }),
+      });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Không thể xuất bản.");
@@ -92,7 +105,7 @@ export default function AdminHeroPage() {
       setPubSubtitle(draftSubtitle);
       setPubName(draftName);
       setPubImageUrl(draftImageUrl);
-      setFeedback({ type: "success", message: "✓ Đã xuất bản Banner Trang chủ (Đồng Hành Pháp Lý) ra Public thành công." });
+      setFeedback({ type: "success", message: "✓ Đã xuất bản Banner Trang chủ (Đồng Hành Pháp Lý) ra Trang chủ thành công!" });
     } catch (err: any) {
       setFeedback({ type: "error", message: err.message || "Lỗi xuất bản." });
     } finally {

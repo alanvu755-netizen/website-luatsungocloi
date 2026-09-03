@@ -42,18 +42,36 @@ export async function updateIntroductionDraft(
   });
 }
 
-export async function publishIntroduction(siteId: string, adminUserId: string) {
+export async function publishIntroduction(
+  siteId: string,
+  adminUserId: string,
+  data?: {
+    draftTitle?: string;
+    draftContent?: string;
+    draftImageUrl?: string | null;
+    draftHighlightsJson?: string | null;
+  }
+) {
   const intro = await prisma.introduction.findUnique({ where: { siteId } });
   if (!intro) throw new Error("Introduction record not found");
 
-  // Atomic publish: copy draft* -> pub*
+  const titleToUse = data?.draftTitle ?? intro.draftTitle;
+  const contentToUse = data?.draftContent ?? intro.draftContent;
+  const imageToUse = (data?.draftImageUrl !== undefined ? data.draftImageUrl : intro.draftImageUrl) || "/NgocLoi-office.jpg";
+  const highlightsToUse = data?.draftHighlightsJson !== undefined ? data.draftHighlightsJson : intro.draftHighlightsJson;
+
+  // Atomic publish: save draft* & pub* simultaneously
   const updatedIntro = await prisma.introduction.update({
     where: { siteId },
     data: {
-      pubTitle: intro.draftTitle,
-      pubContent: intro.draftContent,
-      pubImageUrl: intro.draftImageUrl || "/NgocLoi-office.jpg",
-      pubHighlightsJson: intro.draftHighlightsJson,
+      draftTitle: titleToUse,
+      draftContent: contentToUse,
+      draftImageUrl: imageToUse,
+      draftHighlightsJson: highlightsToUse,
+      pubTitle: titleToUse,
+      pubContent: contentToUse,
+      pubImageUrl: imageToUse,
+      pubHighlightsJson: highlightsToUse,
       status: "PUBLISHED",
     },
   });
@@ -67,11 +85,16 @@ export async function publishIntroduction(siteId: string, adminUserId: string) {
       entityType: "Introduction",
       entityId: intro.id,
       metadata: JSON.stringify({
-        pubTitle: intro.draftTitle,
+        pubTitle: titleToUse,
       }),
     },
   });
 
-  revalidatePath("/");
+  try {
+    revalidatePath("/");
+    revalidatePath("/gioi-thieu");
+    revalidatePath("/admin/introduction");
+  } catch (e) {}
+
   return updatedIntro;
 }
